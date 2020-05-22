@@ -130,3 +130,9 @@ if __name__ == '__main__':
             video_manager.release()
 
     print(scene_dict)
+
+    save_dict = False
+    save_path = '../../keys/scene_index.pkl'
+    if save_dict:
+        with open(save_path, 'wb') as f:
+            pickle.dump(scene_dict, f)
