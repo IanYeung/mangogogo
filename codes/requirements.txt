@@ -9,3 +9,4 @@ pandas
 ffmpeg-python
 imageio
 imageio-ffmpeg
+scenedetect
