@@ -33,6 +33,8 @@ def create_dataset(dataset_opt):
     elif mode == 'LQGT':
         from data.LQGT_dataset import LQGTDataset as D
     # datasets for video restoration
+    elif mode == 'MGTV':
+        from data.MGTV_dataset import MGTVDataset as D
     elif mode == 'REDS':
         from data.REDS_dataset import REDSDataset as D
     elif mode == 'Vimeo90K':

@@ -12,7 +12,7 @@ import cv2
 ####################
 
 ###################### get image path list ######################
-IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP']
+IMG_EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', 'npy', 'npz']
 
 
 def is_image_file(filename):
@@ -108,6 +108,90 @@ def read_img_seq(path):
     return imgs
 
 
+def _read_npy_lmdb(env, key, size):
+    """read image from lmdb with key (w/ and w/o fixed size)
+    size: (C, H, W) tuple"""
+    with env.begin(write=False) as txn:
+        buf = txn.get(key.encode('ascii'))
+    img_flat = np.frombuffer(buf, dtype=np.uint8)
+    C, H, W = size
+    img = img_flat.reshape(H, W, C)
+    return img
+
+
+def read_npy(env, path, size=None):
+    """read image by numpy.load
+    return: Numpy float32, HWC, BGR, [0,1]"""
+    if env is None:  # img
+        img = np.load(path)
+    else:
+        img = _read_npy_lmdb(env, path, size)
+    img = img.astype(np.float32) / 255.
+    if img.ndim == 2:
+        img = np.expand_dims(img, axis=2)
+    return img
+
+
+def read_npy_seq(path):
+    """Read a sequence of images from a given folder path
+    Args:
+        path (list/str): list of image paths/image folder path
+    Returns:
+        imgs (Tensor): size (T, C, H, W), YUV, [0, 1]
+    """
+    if type(path) is list:
+        img_path_l = path
+    else:
+        img_path_l = sorted(glob.glob(os.path.join(path, '*')))
+    img_l = [read_npy(None, v) for v in img_path_l]
+    # stack to Torch tensor
+    imgs = np.stack(img_l, axis=0)
+    imgs = torch.from_numpy(np.ascontiguousarray(np.transpose(imgs, (0, 3, 1, 2)))).float()
+    return imgs
+
+
+def _read_npz_lmdb(env, key, size):
+    """read image from lmdb with key (w/ and w/o fixed size)
+    size: (C, H, W) tuple"""
+    with env.begin(write=False) as txn:
+        buf = txn.get(key.encode('ascii'))
+    img_flat = np.frombuffer(buf, dtype=np.uint8)
+    C, H, W = size
+    img = img_flat.reshape(H, W, C)
+    return img
+
+
+def read_npz(env, path, size=None):
+    """read image by numpy.load
+    return: Numpy float32, HWC, BGR, [0,1]"""
+    if env is None:  # img
+        img = np.load(path)['img']
+    else:
+        img = _read_npz_lmdb(env, path, size)
+    img = img.astype(np.float32) / 255.
+    if img.ndim == 2:
+        img = np.expand_dims(img, axis=2)
+    return img
+
+
+def read_npz_seq(path):
+    """Read a sequence of images from a given folder path
+    Args:
+        path (list/str): list of image paths/image folder path
+    Returns:
+        imgs (Tensor): size (T, C, H, W), YUV, [0, 1]
+    """
+    if type(path) is list:
+        img_path_l = path
+    else:
+        img_path_l = sorted(glob.glob(os.path.join(path, '*')))
+    img_l = [read_npz(None, v) for v in img_path_l]
+    # stack to Torch tensor
+    imgs = np.stack(img_l, axis=0)
+    imgs = torch.from_numpy(np.ascontiguousarray(np.transpose(imgs, (0, 3, 1, 2)))).float()
+    return imgs
+
+
 def index_generation(crt_i, max_n, N, padding='reflection'):
     """Generate an index list for reading N frames from a sequence of images
     Args:
@@ -154,6 +238,43 @@ def index_generation(crt_i, max_n, N, padding='reflection'):
         else:
             add_idx = i
         return_l.append(add_idx)
+    return return_l
+
+
+def index_generation_with_scene_list(crt_i, max_n, N, scene_list, padding='replicate'):
+    """Generate an index list for reading N frames from a sequence of images (with a scene list)
+    Args:
+        crt_i (int): current center index
+        max_n (int): max number of the sequence of images (calculated from 1)
+        N (int): reading N frames
+        scene_list (list): scene list indicating the start of each scene, example: [0, 10, 51, 100]
+        padding (str): padding mode, one of replicate
+            Example: crt_i = 0, N = 5
+            replicate: [0, 0, 0, 1, 2]
+    Returns:
+        return_l (list [int]): a list of indexes
+    """
+    assert max_n == scene_list[-1]
+    n_pad = N // 2
+    return_l = []
+
+    num_scene = len(scene_list) - 1
+    for i in range(num_scene):
+        if (crt_i >= scene_list[i]) and (crt_i <= scene_list[i + 1] - 1):
+            for j in range(crt_i - n_pad, crt_i + n_pad + 1):
+                if j < scene_list[i]:
+                    if padding == 'replicate':
+                        add_idx = scene_list[i]
+                    else:
+                        raise ValueError('Wrong padding mode')
+                elif j > (scene_list[i + 1] - 1):
+                    if padding == 'replicate':
+                        add_idx = scene_list[i + 1] - 1
+                    else:
+                        raise ValueError('Wrong padding mode')
+                else:
+                    add_idx = j
+                return_l.append(add_idx)
     return return_l
 
 
