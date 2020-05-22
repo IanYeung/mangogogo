@@ -131,20 +131,20 @@ class MGTVDataset(data.Dataset):
         # get the GT image (as the center frame)
         GT_size_tuple = (3, 1080, 1920)
         if self.data_type == 'lmdb':
-            img_GT = util.read_npz(self.GT_env, key, GT_size_tuple)
+            img_GT = util.read_img(self.GT_env, key, GT_size_tuple)
         else:
             img_GT_path = osp.join(self.GT_root, seq_name, frm_name + '.npz')
-            img_GT = util.read_npz(None, img_GT_path)
+            img_GT = util.read_img(None, img_GT_path)
 
         # get LQ images
         LQ_size_tuple = (3, 1080, 1920)
         img_LQ_l = []
         for v in neighbor_list:
             if self.data_type == 'lmdb':
-                img_LQ = util.read_npz(self.LQ_env, '{}_{:03d}'.format(seq_name, v), LQ_size_tuple)
+                img_LQ = util.read_img(self.LQ_env, '{}_{:03d}'.format(seq_name, v), LQ_size_tuple)
             else:
                 img_LQ_path = osp.join(self.LQ_root, seq_name, '{:03d}.npz'.format(v))
-                img_LQ = util.read_npz(None, img_LQ_path)
+                img_LQ = util.read_img(None, img_LQ_path)
             img_LQ_l.append(img_LQ)
 
         if self.opt['phase'] == 'train':
