@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 
 
-def extract_frames_from_single_video(video_path, out_path, mode='npz'):
+def extract_frames_from_single_video(video_path, out_path, mode='png'):
 
-    assert mode == 'npy' or mode == 'npz'
+    assert mode == 'npy' or mode == 'npz' or mode == 'png'
     util.mkdir(out_path)
 
     video = imageio.get_reader(video_path, format='ffmpeg', mode='I', dtype=np.uint8)
@@ -68,13 +68,14 @@ def extract_frames_from_single_video(video_path, out_path, mode='npz'):
         YUV[1::2, :, 1] = UMatrix
         YUV[0::2, :, 2] = VMatrix
         YUV[1::2, :, 2] = VMatrix
-        img_yuv = YUV.astype(np.float32) / 255.
 
         index += 1
-        if mode == 'npy':
-            np.save(osp.join(out_path, '{:03d}.npy'.format(index)), img_yuv)
-        else:
-            np.savez_compressed(osp.join(out_path, '{:03d}'.format(index)), img=img_yuv)
+        if mode == 'png':
+            cv2.imwrite(osp.join(out_path, '{:03d}.png'.format(index)), YUV)
+        elif mode == 'npy':
+            np.save(osp.join(out_path, '{:03d}.npy'.format(index)), YUV)
+        elif mode == 'npz':
+            np.savez_compressed(osp.join(out_path, '{:03d}'.format(index)), img=YUV)
 
 
 if __name__ == '__main__':
@@ -85,7 +86,7 @@ if __name__ == '__main__':
 
     # single videos
     video_path = '/home/xiyang/Downloads/VideoEnhance/test_damage_A/mg_test_0800_damage.y4m'
-    out_path = osp.join(dst_root, osp.basename(video_path)[:-4])
+    out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
     extract_frames_from_single_video(video_path, out_path)
 
     # multiple videos
