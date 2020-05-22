@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SRC_DIR=/home/xiyang/Downloads/VideoEnhance/test_damage_A
-DST_DIR=/home/xiyang/Downloads/VideoEnhance/test_damage_A_scene_detect_thres35
+SRC_DIR=/home/xiyang/Downloads/VideoEnhance/train_ref
+DST_DIR=/home/xiyang/Downloads/VideoEnhance/train_ref_scene_detect_thres35
 mkdir "$DST_DIR"
 FILES=$(ls $SRC_DIR | grep .y4m)
 

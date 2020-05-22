@@ -77,6 +77,56 @@ def scene_index(root, verbose=False, save_dict=False, save_path=None):
 
 
 if __name__ == '__main__':
-    # Please use scene_detect.sh to get the scene change information first
-    root = '/home/xiyang/Downloads/VideoEnhance/test_damage_A_scene_detect_thres35/*'
-    start_dict, scene_count = scene_index(root, verbose=True, save_dict=False, save_path=None)
+
+    # Choice 1: command line interface of scenedetect library
+    # # Please use scene_detect.sh to get the scene change information first
+    # root = '/home/xiyang/Downloads/VideoEnhance/train_ref_scene_detect_thres35/*'
+    # start_dict, scene_count = scene_index(root, verbose=True, save_dict=False, save_path=None)
+
+    # Choice 2: python interface of scenedetect library
+    import scenedetect
+    from scenedetect.video_manager import VideoManager
+    from scenedetect.frame_timecode import FrameTimecode
+    from scenedetect.stats_manager import StatsManager
+    from scenedetect.detectors import ContentDetector
+    from data_scripts.scene_detect import MySceneManager
+
+    ####################################################
+    # 1.video input test
+    # Create a video_manager point to video file testvideo.mp4. Note that multiple
+    # videos can be appended by simply specifying more file paths in the list
+    # passed to the VideoManager constructor. Note that appending multiple videos
+    # requires that they all have the same frame size, and optionally, framerate.
+
+    # file_paths = ['/home/xiyang/Downloads/VideoEnhance/train_ref/mg_train_0000_ref.y4m',
+    #               '/home/xiyang/Downloads/VideoEnhance/train_ref/mg_train_0001_ref.y4m']
+
+    root = '/home/xiyang/Downloads/VideoEnhance/train_ref/'
+    file_paths = sorted(glob.glob(osp.join(root, '*.y4m')))
+
+    scene_dict = dict()
+    for file_path in file_paths:
+        file_name = osp.basename(file_path).split('.')[0]
+        print(file_name)
+        video_manager = VideoManager([file_path])
+        stats_manager = StatsManager()
+        scene_manager = MySceneManager(input_mode='video')
+        # Add ContentDetector algorithm (constructor takes detector options like threshold).
+        scene_manager.add_detector(ContentDetector())
+        base_timecode = video_manager.get_base_timecode()
+
+        try:
+            video_manager.set_downscale_factor(1)
+            video_manager.start()
+            scene_manager.detect_scenes(video_manager, step=1)
+            scene_list = scene_manager.get_scene_list(base_timecode)
+            video_scene_list = []
+            for i, scene in enumerate(scene_list):
+                video_scene_list.append(scene[0].get_frames())
+                if i + 1 == len(scene_list):
+                    video_scene_list.append(scene[1].get_frames())
+            scene_dict[file_name] = video_scene_list
+        finally:
+            video_manager.release()
+
+    print(scene_dict)
