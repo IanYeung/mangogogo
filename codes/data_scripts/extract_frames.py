@@ -6,11 +6,10 @@ import numpy as np
 import cv2
 import imageio
 import ffmpeg
-import utils.util as util
 import matplotlib.pyplot as plt
 
-
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+import utils.util as util
 
 
 def extract_frames_from_single_video(video_path, out_path, mode='png'):
