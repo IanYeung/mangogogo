@@ -1,11 +1,14 @@
 import os
 import os.path as osp
+import sys
 import glob
 import pickle
 import random
 import pandas as pd
-import data.util as util
 from collections import Counter
+
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+import data.util as util
 
 
 def save_keys(save_path, root):
