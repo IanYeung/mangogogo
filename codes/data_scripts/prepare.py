@@ -85,7 +85,7 @@ if __name__ == '__main__':
     
     
     #### save all keys
-    save_keys('../../keys/scene_index.pkl', root)
+    save_keys('../../keys/all_keys.pkl', root)
     
     
     #### split train sequences and valid sequences
