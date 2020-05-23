@@ -24,6 +24,12 @@ def define_G(opt):
                               back_RBs=opt_net['back_RBs'], center=opt_net['center'],
                               predeblur=opt_net['predeblur'], HR_in=opt_net['HR_in'],
                               w_TSA=opt_net['w_TSA'])
+    elif which_model == 'EDVR_YUV420':
+        netG = EDVR_arch.EDVR_YUV420(nf=opt_net['nf'], nframes=opt_net['nframes'],
+                                     groups=opt_net['groups'], front_RBs=opt_net['front_RBs'],
+                                     back_RBs=opt_net['back_RBs'], center=opt_net['center'],
+                                     predeblur=opt_net['predeblur'], HR_in=opt_net['HR_in'],
+                                     w_TSA=opt_net['w_TSA'])
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 
