@@ -31,7 +31,7 @@ def train_valid_split(root, num_train_seq, num_valid_seq,
                       save_train_list=False, save_valid_list=False,
                       save_path_train_list=None, save_path_valid_list=None):
     """split the sequences for training and validation"""
-    seq_list = sorted(glob.glob(root))
+    seq_list = sorted(glob.glob(osp.join(root, '*')))
     seq_list = [osp.basename(seq) for seq in seq_list]
     num_total_seq = len(seq_list)
     assert num_train_seq + num_valid_seq <= num_total_seq
