@@ -312,7 +312,7 @@ class EDVR(nn.Module):
         return out
     
     
-    class EDVR_YUV420(nn.Module):
+class EDVR_YUV420(nn.Module):
     def __init__(self, nf=64, nframes=5, groups=8, front_RBs=5, back_RBs=10, center=None,
                  predeblur=False, HR_in=True, w_TSA=True):
         super(EDVR_YUV420, self).__init__()
