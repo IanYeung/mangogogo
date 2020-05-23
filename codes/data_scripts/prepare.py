@@ -80,7 +80,22 @@ def scene_index(root, verbose=False, save_dict=False, save_path=None):
 
 
 if __name__ == '__main__':
-
+    
+    root = '/data/yangxi/MGTV/GT_frames'
+    
+    
+    #### save all keys
+    save_keys('../../keys/scene_index.pkl', root)
+    
+    
+    #### split train sequences and valid sequences
+    train_valid_split(root, num_train_seq=780, num_valid_seq=20,
+                      save_train_list=True, save_valid_list=True,
+                      save_path_train_list='../../keys/train_seqs.pkl', 
+                      save_path_valid_list='../../keys/valid_seqs.pkl')
+    
+    
+    #### get scene information
     # Choice 1: command line interface of scenedetect library
     # # Please use scene_detect.sh to get the scene change information first
     # root = '/home/xiyang/Downloads/VideoEnhance/train_ref_scene_detect_thres35/*'
@@ -93,13 +108,6 @@ if __name__ == '__main__':
     from scenedetect.stats_manager import StatsManager
     from scenedetect.detectors import ContentDetector
     from data_scripts.scene_detect import MySceneManager
-
-    ####################################################
-    # 1.video input test
-    # Create a video_manager point to video file testvideo.mp4. Note that multiple
-    # videos can be appended by simply specifying more file paths in the list
-    # passed to the VideoManager constructor. Note that appending multiple videos
-    # requires that they all have the same frame size, and optionally, framerate.
 
     root = '/data/yangxi/MGTV/GT'
     file_paths = sorted(glob.glob(osp.join(root, '*.y4m')))
