@@ -92,5 +92,5 @@ if __name__ == '__main__':
     # multiple videos
     # video_paths = sorted(glob.glob(osp.join(src_root, '*.y4m')))
     # for video_path in video_paths:
-    #     out_path = osp.join(dst_root, osp.basename(video_path)[:-4])
+    #     out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
     #     extract_frames_from_single_video(video_path, out_path)
