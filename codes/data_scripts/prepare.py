@@ -101,16 +101,12 @@ if __name__ == '__main__':
     # passed to the VideoManager constructor. Note that appending multiple videos
     # requires that they all have the same frame size, and optionally, framerate.
 
-    # file_paths = ['/home/xiyang/Downloads/VideoEnhance/train_ref/mg_train_0000_ref.y4m',
-    #               '/home/xiyang/Downloads/VideoEnhance/train_ref/mg_train_0001_ref.y4m']
-
-    root = '/home/xiyang/Downloads/VideoEnhance/train_ref/'
+    root = '/data/yangxi/MGTV/GT'
     file_paths = sorted(glob.glob(osp.join(root, '*.y4m')))
 
     scene_dict = dict()
     for file_path in file_paths:
         file_name = osp.basename(file_path).split('.')[0]
-        print(file_name)
         video_manager = VideoManager([file_path])
         stats_manager = StatsManager()
         scene_manager = MySceneManager(input_mode='video')
@@ -129,6 +125,7 @@ if __name__ == '__main__':
                 if i + 1 == len(scene_list):
                     video_scene_list.append(scene[1].get_frames())
             scene_dict[file_name] = video_scene_list
+            print('{}.y4m: {}'.format(file_name, video_scene_list))
         finally:
             video_manager.release()
 
