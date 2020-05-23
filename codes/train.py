@@ -258,39 +258,68 @@ def main():
                                 for k, v in psnr_rlt_avg.items():
                                     tb_logger.add_scalar(k, v, current_step)
                     else:
-                        pbar = util.ProgressBar(len(val_loader))
-                        psnr_rlt = {}  # with border and center frames
-                        psnr_rlt_avg = {}
-                        psnr_total_avg = 0.
-                        for val_data in val_loader:
-                            folder = val_data['folder'][0]
-                            idx_d = val_data['idx'].item()
-                            # border = val_data['border'].item()
-                            if psnr_rlt.get(folder, None) is None:
-                                psnr_rlt[folder] = []
+                        # pbar = util.ProgressBar(len(val_loader))
+                        # psnr_rlt = {}  # with border and center frames
+                        # psnr_rlt_avg = {}
+                        # psnr_total_avg = 0.
+                        # for val_data in val_loader:
+                        #     folder = val_data['folder'][0]
+                        #     idx_d = val_data['idx'].item()
+                        #     # border = val_data['border'].item()
+                        #     if psnr_rlt.get(folder, None) is None:
+                        #         psnr_rlt[folder] = []
 
+                        #     model.feed_data(val_data)
+                        #     model.test()
+                        #     visuals = model.get_current_visuals()
+                        #     rlt_img = util.tensor2img(visuals['rlt'])  # uint8
+                        #     gt_img = util.tensor2img(visuals['GT'])  # uint8
+
+                        #     # calculate PSNR
+                        #     psnr = util.calculate_psnr(rlt_img, gt_img)
+                        #     psnr_rlt[folder].append(psnr)
+                        #     pbar.update('Test {} - {}'.format(folder, idx_d))
+                        # for k, v in psnr_rlt.items():
+                        #     psnr_rlt_avg[k] = sum(v) / len(v)
+                        #     psnr_total_avg += psnr_rlt_avg[k]
+                        # psnr_total_avg /= len(psnr_rlt)
+                        # log_s = '# Validation # PSNR: {:.4e}:'.format(psnr_total_avg)
+                        # for k, v in psnr_rlt_avg.items():
+                        #     log_s += ' {}: {:.4e}'.format(k, v)
+                        # logger.info(log_s)
+                        # if opt['use_tb_logger'] and 'debug' not in opt['name']:
+                        #     tb_logger.add_scalar('psnr_avg', psnr_total_avg, current_step)
+                        #     for k, v in psnr_rlt_avg.items():
+                        #         tb_logger.add_scalar(k, v, current_step)
+                        
+                        pbar = util.ProgressBar(len(val_loader))
+                        psnr_y_sum, psnr_y_avg = 0., 0.
+                        psnr_u_sum, psnr_u_avg = 0., 0.
+                        psnr_v_sum, psnr_v_avg = 0., 0.
+                        for val_data in val_loader:
                             model.feed_data(val_data)
                             model.test()
                             visuals = model.get_current_visuals()
-                            rlt_img = util.tensor2img(visuals['rlt'])  # uint8
-                            gt_img = util.tensor2img(visuals['GT'])  # uint8
-
+                            rlt_img = util.tensor2img(visuals['rlt'], reverse_channel=False)  # uint8
+                            gt_img = util.tensor2img(visuals['GT'], reverse_channel=False)  # uint8
                             # calculate PSNR
-                            psnr = util.calculate_psnr(rlt_img, gt_img)
-                            psnr_rlt[folder].append(psnr)
-                            pbar.update('Test {} - {}'.format(folder, idx_d))
-                        for k, v in psnr_rlt.items():
-                            psnr_rlt_avg[k] = sum(v) / len(v)
-                            psnr_total_avg += psnr_rlt_avg[k]
-                        psnr_total_avg /= len(psnr_rlt)
-                        log_s = '# Validation # PSNR: {:.4e}:'.format(psnr_total_avg)
-                        for k, v in psnr_rlt_avg.items():
-                            log_s += ' {}: {:.4e}'.format(k, v)
-                        logger.info(log_s)
+                            psnr_y_sum += util.calculate_psnr(rlt_img[:, :, 0], gt_img[:, :, 0])
+                            psnr_u_sum += util.calculate_psnr(rlt_img[:, :, 1], gt_img[:, :, 1])
+                            psnr_v_sum += util.calculate_psnr(rlt_img[:, :, 2], gt_img[:, :, 2])
+                            pbar.update()
+                        psnr_y_avg = psnr_y_sum / len(val_loader)
+                        psnr_u_avg = psnr_u_sum / len(val_loader)
+                        psnr_v_avg = psnr_v_sum / len(val_loader)
+                        
+                        # print out information
+                        logger.info('# Validation # PSNR of Y channel: {:.2f} dB'.format(psnr_y_avg))
+                        logger.info('# Validation # PSNR of U channel: {:.2f} dB'.format(psnr_u_avg))
+                        logger.info('# Validation # PSNR of V channel: {:.2f} dB'.format(psnr_v_avg))
+                        # write to tensorboard
                         if opt['use_tb_logger'] and 'debug' not in opt['name']:
-                            tb_logger.add_scalar('psnr_avg', psnr_total_avg, current_step)
-                            for k, v in psnr_rlt_avg.items():
-                                tb_logger.add_scalar(k, v, current_step)
+                            tb_logger.add_scalar('psnr_y_avg', psnr_y_avg, current_step)
+                            tb_logger.add_scalar('psnr_u_avg', psnr_u_avg, current_step)
+                            tb_logger.add_scalar('psnr_v_avg', psnr_v_avg, current_step)
 
             #### save models and training states
             if current_step % opt['logger']['save_checkpoint_freq'] == 0:
