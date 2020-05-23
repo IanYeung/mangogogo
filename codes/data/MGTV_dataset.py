@@ -133,7 +133,7 @@ class MGTVDataset(data.Dataset):
         if self.data_type == 'lmdb':
             img_GT = util.read_img(self.GT_env, key, GT_size_tuple)
         else:
-            img_GT_path = osp.join(self.GT_root, seq_name, frm_name + '.npz')
+            img_GT_path = osp.join(self.GT_root, seq_name, frm_name + '.png')
             img_GT = util.read_img(None, img_GT_path)
 
         # get LQ images
@@ -143,15 +143,15 @@ class MGTVDataset(data.Dataset):
             if self.data_type == 'lmdb':
                 img_LQ = util.read_img(self.LQ_env, '{}_{:03d}'.format(seq_name, v), LQ_size_tuple)
             else:
-                img_LQ_path = osp.join(self.LQ_root, seq_name, '{:03d}.npz'.format(v))
+                img_LQ_path = osp.join(self.LQ_root, seq_name, '{:03d}.png'.format(v))
                 img_LQ = util.read_img(None, img_LQ_path)
             img_LQ_l.append(img_LQ)
 
         if self.opt['phase'] == 'train':
             C, H, W = LQ_size_tuple  # LQ size
             # randomly crop
-            rnd_h = random.randint(0, max(0, H - crop_h))
-            rnd_w = random.randint(0, max(0, W - crop_w))
+            rnd_h = random.randint(0, max(0, H - crop_h)) // 2 * 2  # random even number
+            rnd_w = random.randint(0, max(0, W - crop_w)) // 2 * 2  # random even number
             img_LQ_l = [v[rnd_h:rnd_h + crop_h, rnd_w:rnd_w + crop_w, :] for v in img_LQ_l]
             img_GT = img_GT[rnd_h:rnd_h + crop_h, rnd_w:rnd_w + crop_w, :]
 
