@@ -18,7 +18,7 @@ if __name__ == '__main__':
     # unzip
     paths = sorted(glob.glob(os.path.join(root, '*.zip')))
     for path in paths:
-        command = 'unzip {}'.format(path)
+        command = 'unzip {} -d {}'.format(path, root)
         print(command)
         os.system(command)
     
