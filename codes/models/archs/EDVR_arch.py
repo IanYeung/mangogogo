@@ -321,8 +321,8 @@ class EDVR_YUV420(nn.Module):
         self.is_predeblur = True if predeblur else False
         self.HR_in = True if HR_in else False
         self.w_TSA = w_TSA
-        self.Y_first_conv = nn.Conv2d(1, 16, 3, 2, 1, bias=True)
-        self.UV_first_conv = nn.Conv2d(1, 16, 3, 1, 1, bias=True)
+        self.Y_first_conv = nn.Conv2d(1, 16, 7, 2, 3, bias=True)
+        self.UV_first_conv = nn.Conv2d(1, 16, 7, 1, 3, bias=True)
 
         ResidualBlock_noBN_f = functools.partial(arch_util.ResidualBlock_noBN, nf=nf)
         RRDB_block_f = functools.partial(arch_util.RRDB, nf=nf, gc=32)
