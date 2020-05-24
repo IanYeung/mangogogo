@@ -4,6 +4,12 @@ import torch.nn.init as init
 import torch.nn.functional as F
 
 
+def default_conv(in_channels, out_channels, kernel_size, bias=True):
+    return nn.Conv2d(
+        in_channels, out_channels, kernel_size,
+        padding=(kernel_size//2), bias=bias)
+
+
 def initialize_weights(net_l, scale=1):
     if not isinstance(net_l, list):
         net_l = [net_l]
