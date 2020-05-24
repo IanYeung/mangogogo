@@ -97,8 +97,7 @@ class ResidualDenseBlock_5C(nn.Module):
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
         # initialization
-        arch_util.initialize_weights([self.conv1, self.conv2, self.conv3, self.conv4, self.conv5],
-                                     0.1)
+        initialize_weights([self.conv1, self.conv2, self.conv3, self.conv4, self.conv5], 0.1)
 
     def forward(self, x):
         x1 = self.lrelu(self.conv1(x))
