@@ -1,21 +1,19 @@
 import os
 import glob
 
-
-def mkdir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+import utils.util as util  # noqa: E402
 
 
 if __name__ == '__main__':
     # download
     root = '/data/yangxi/MGTV'
     link = '/data/yangxi/MGTV/link.txt'
-
+    util.mkdir(root)
     with open(link, 'r') as f:
         lines = f.readlines()
     for line in lines:
-        os.system("wget {}".format(line))
+        os.system("wget -P {} {}".format(root, line))
 
     # unzip
     paths = sorted(glob.glob(os.path.join(root, '*.zip')))
@@ -25,8 +23,8 @@ if __name__ == '__main__':
         os.system(command)
     
     # move
-    mkdir(os.path.join(root, 'LQ'))
-    mkdir(os.path.join(root, 'GT'))
+    util.mkdir(os.path.join(root, 'LQ'))
+    util.mkdir(os.path.join(root, 'GT'))
 
     lq_name = [
         'train_damage_part1', 
@@ -82,5 +80,3 @@ if __name__ == '__main__':
         command = 'mv {} {}'.format(src_path, dst_path)
         print(command)
         os.system(command)
-    
-    

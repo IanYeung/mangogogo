@@ -8,7 +8,7 @@ import pandas as pd
 from collections import Counter
 
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-import data.util as util
+import data.util as util  # noqa: E402
 
 
 def save_keys(save_path, root):

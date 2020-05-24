@@ -9,7 +9,7 @@ import ffmpeg
 import matplotlib.pyplot as plt
 
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
-import utils.util as util
+import utils.util as util  # noqa: E402
 
 
 def extract_frames_from_single_video(video_path, out_path, mode='png'):
