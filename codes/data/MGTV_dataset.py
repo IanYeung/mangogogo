@@ -167,7 +167,16 @@ class MGTVDataset(data.Dataset):
         img_GT = torch.from_numpy(np.ascontiguousarray(np.transpose(img_GT, (2, 0, 1)))).float()
         img_LQs = torch.from_numpy(np.ascontiguousarray(np.transpose(img_LQs, (0, 3, 1, 2)))).float()
 
-        return {'LQs': img_LQs, 'GT': img_GT, 'key': key}
+        if self.opt['split']:
+            img_GT_Y = img_GT[0, :, :]
+            img_GT_UV = (img_GT[1:, 0::2, 0::2] + img_GT[1:, 0::2, 1::2] +
+                         img_GT[1:, 1::2, 0::2] + img_GT[1:, 1::2, 1::2]) / 4.
+            img_LQs_Y = img_LQs[:, 0, :, :]
+            img_LQs_UV = (img_LQs[:, 1:, 0::2, 0::2] + img_LQs[:, 1:, 0::2, 1::2] +
+                          img_LQs[:, 1:, 1::2, 0::2] + img_LQs[:, 1:, 1::2, 1::2]) / 4.
+            return {'LQs_Y': img_LQs_Y, 'LQs_UV': img_LQs_UV, 'GT_Y': img_GT_Y, 'GT_UV': img_GT_UV, 'key': key}
+        else:
+            return {'LQs': img_LQs, 'GT': img_GT, 'key': key}
 
     def __len__(self):
         return len(self.paths_GT)

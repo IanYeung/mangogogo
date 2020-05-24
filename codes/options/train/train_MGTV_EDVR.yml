@@ -21,7 +21,6 @@ datasets:
     train_seqs: ../keys/train_seqs.pkl
     valid_seqs: ../keys/valid_seqs.pkl
     scene_index: ../keys/scene_index.pkl
-
     N_frames: 7
     use_shuffle: true
     n_workers: 3  # per GPU
@@ -30,6 +29,7 @@ datasets:
     crop_w: 384
     use_flip: true
     use_rot: true
+    split: false
 
   val:
     name: MGTV
@@ -44,7 +44,6 @@ datasets:
     train_seqs: ../keys/train_seqs.pkl
     valid_seqs: ../keys/valid_seqs.pkl
     scene_index: ../keys/scene_index.pkl
-
     N_frames: 7
     use_shuffle: false
     n_workers: 3  # per GPU
@@ -53,7 +52,7 @@ datasets:
     crop_w: 384
     use_flip: false
     use_rot: false
-
+    split: false
 
 #### network structures
 network_G:
