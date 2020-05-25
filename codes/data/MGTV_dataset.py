@@ -14,7 +14,7 @@ logger = logging.getLogger('base')
 
 
 class MGTVDataset(data.Dataset):
-    '''
+    """
     Reading the MGTV dataset for training
     Key example: XXXX_XXX
         1st part: sequence name
@@ -22,7 +22,7 @@ class MGTVDataset(data.Dataset):
     GT: Ground-Truth Frame;
     LQ: Low-Quality Frames;
     Support reading N LQ frames, N = 1, 3, 5, 7, ...
-    '''
+    """
 
     def __init__(self, opt):
         super(MGTVDataset, self).__init__()
@@ -169,11 +169,9 @@ class MGTVDataset(data.Dataset):
 
         if self.opt['split']:
             img_GT_Y = img_GT[0, :, :]
-            img_GT_UV = (img_GT[1:, 0::2, 0::2] + img_GT[1:, 0::2, 1::2] +
-                         img_GT[1:, 1::2, 0::2] + img_GT[1:, 1::2, 1::2]) / 4.
+            img_GT_UV = img_GT[1:, 0::2, 0::2]
             img_LQs_Y = img_LQs[:, 0, :, :]
-            img_LQs_UV = (img_LQs[:, 1:, 0::2, 0::2] + img_LQs[:, 1:, 0::2, 1::2] +
-                          img_LQs[:, 1:, 1::2, 0::2] + img_LQs[:, 1:, 1::2, 1::2]) / 4.
+            img_LQs_UV = img_LQs[:, 1:, 0::2, 0::2]
             return {'LQs_Y': img_LQs_Y, 'LQs_UV': img_LQs_UV, 'GT_Y': img_GT_Y, 'GT_UV': img_GT_UV, 'key': key}
         else:
             return {'LQs': img_LQs, 'GT': img_GT, 'key': key}
