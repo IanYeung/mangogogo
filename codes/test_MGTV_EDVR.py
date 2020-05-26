@@ -5,6 +5,8 @@ import logging
 import math
 import numpy as np
 import cv2
+import ffmpeg
+import imageio
 import torch
 import pickle
 
@@ -27,7 +29,7 @@ def main(gpu_id, start_id, step):
     N_in = 7  # use N_in images to restore one HR image
     model = EDVR_arch.EDVR(128, N_in, 8, 5, 20, predeblur=False, HR_in=True, w_TSA=False)
 
-    test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_frames'  # TODO: change path
+    test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_A'  # TODO: change path
 
     #### scene information
     scene_index_path = '../keys/scene_index_test.pkl'  # TODO: change path
@@ -36,7 +38,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_results'  # TODO: change path
+    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_videos'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')
@@ -53,27 +55,65 @@ def main(gpu_id, start_id, step):
     model.eval()
     model = model.to(device)
 
-    subfolder_name_l = []
-    subfolder_l = sorted(glob.glob(osp.join(test_dataset_folder, '*')))
+    video_path_l = sorted(glob.glob(osp.join(test_dataset_folder, '*')))
     seq_id = start_id
-    for subfolder in subfolder_l[start_id::step]:
-        subfolder_name = osp.basename(subfolder)
-        subfolder_name_l.append(subfolder_name)
-        save_subfolder = osp.join(save_folder, subfolder_name)
-        img_path_l = sorted(glob.glob(osp.join(subfolder, '*')))
+    for video_path in video_path_l[start_id::step]:
+        video_name = osp.basename(video_path).split('.')[0]
+        logger.info('Processing: {}'.format(osp.basename(video_path)))
+        output_path = osp.join(save_folder, '{}.y4m'.format(video_name))
 
-        max_idx = len(img_path_l)
-        if save_imgs:
-            util.mkdirs(save_subfolder)
+        video = imageio.get_reader(video_path, format='ffmpeg', mode='I', dtype=np.uint8)
+        fps = video.get_meta_data()['fps']
+        w, h = video.get_meta_data()['size']
+        video.close()
 
-        # read LQ images
-        imgs_LQ = data_util.read_img_seq(subfolder)
+        # read the whole sequence into buffer
+        reader = (
+            ffmpeg.input(video_path)
+                  .output('pipe:', format='rawvideo', pix_fmt='yuv420p')
+                  .run_async(pipe_stdout=True)
+        )
+        frame_buffer = []
+        while True:
+            in_bytes_Y = reader.stdout.read(w * h)
+            in_bytes_U = reader.stdout.read(w // 2 * h // 2)
+            in_bytes_V = reader.stdout.read(w // 2 * h // 2)
+            if not in_bytes_Y:
+                print('Finish reading video')
+                break
+            Y = (np.frombuffer(in_bytes_Y, np.uint8).reshape([h, w]))
+            U = (np.frombuffer(in_bytes_U, np.uint8).reshape([h // 2, w // 2]))
+            V = (np.frombuffer(in_bytes_V, np.uint8).reshape([h // 2, w // 2]))
+            YUV = np.zeros((h, w, 3), dtype=np.uint8)
+            # Y channel
+            YUV[:, :, 0] = Y
+            # U channel
+            YUV[0::2, 0::2, 1] = U
+            YUV[0::2, 1::2, 1] = U
+            YUV[1::2, 0::2, 1] = U
+            YUV[1::2, 1::2, 1] = U
+            # V channel
+            YUV[0::2, 0::2, 2] = V
+            YUV[0::2, 1::2, 2] = V
+            YUV[1::2, 0::2, 2] = V
+            YUV[1::2, 1::2, 2] = V
+            YUV = YUV / 255.
+            frame_buffer.append(YUV)
+        imgs_LQ = np.stack(frame_buffer, axis=0)
+        imgs_LQ = torch.from_numpy(np.ascontiguousarray(np.transpose(imgs_LQ, (0, 3, 1, 2)))).float()
 
         # process each image
-        for img_idx, img_path in enumerate(img_path_l):
-            img_name = osp.splitext(osp.basename(img_path))[0]
-            select_idx = data_util.index_generation_with_scene_list(img_idx, max_idx, N_in,
-                                                                    scene_dict[subfolder_name],
+        writer = (
+            ffmpeg.input('pipe:', format='rawvideo', pix_fmt='yuv420p', s='{}x{}'.format(w, h), r=fps)
+                  .output(output_path)
+                  .overwrite_output()
+                  .run_async(pipe_stdin=True)
+        )
+
+        for img_idx, _ in enumerate(range(imgs_LQ.size(0))):
+
+            select_idx = data_util.index_generation_with_scene_list(img_idx, imgs_LQ.size(0), N_in,
+                                                                    scene_dict[video_name],
                                                                     padding=padding)
             imgs_in = imgs_LQ.index_select(0, torch.LongTensor(select_idx)).to(device)
             imgs_in = imgs_in.unsqueeze(0)
@@ -89,9 +129,15 @@ def main(gpu_id, start_id, step):
             else:
                 output = util.single_forward(model, frames)
             output = output[:, :, 4:-4, :]
-            output = util.tensor2img(output)
-            if save_imgs:
-                cv2.imwrite(osp.join(save_subfolder, '{}.png'.format(img_name)), output)
+            output = util.tensor2img(output, reverse_channel=False)
+            output = output.astype(np.float32)
+            Y = output[:, :, 0]
+            U = (output[0::2, 0::2, 1] + output[0::2, 1::2, 1] + output[1::2, 0::2, 1] + output[1::2, 1::2, 1]) / 4
+            V = (output[0::2, 0::2, 2] + output[0::2, 1::2, 2] + output[1::2, 0::2, 2] + output[1::2, 1::2, 2]) / 4
+            Y, U, V = Y.astype(np.uint8), U.astype(np.uint8), V.astype(np.uint8)
+            writer.stdin.write(Y.tobytes())
+            writer.stdin.write(U.tobytes())
+            writer.stdin.write(V.tobytes())
 
             # # inference twice and average over overlap part
             # output_YUV = torch.zeros(1, 3, 1080, 1920)
@@ -117,10 +163,20 @@ def main(gpu_id, start_id, step):
             #         output_YUV2[:, :, i:(i + 1), :] * i / h_overlap
             #
             # output = util.tensor2img(output_YUV)
-            # if save_imgs:
-            #     cv2.imwrite(osp.join(save_subfolder, '{}.png'.format(img_name)), output)
+            # output = output.astype(np.float32)
+            # Y = output[:, :, 0]
+            # U = (output[0::2, 0::2, 1] + output[0::2, 1::2, 1] + output[1::2, 0::2, 1] + output[1::2, 1::2, 1]) / 4
+            # V = (output[0::2, 0::2, 2] + output[0::2, 1::2, 2] + output[1::2, 0::2, 2] + output[1::2, 1::2, 2]) / 4
+            # Y, U, V = Y.astype(np.uint8), U.astype(np.uint8), V.astype(np.uint8)
+            # writer.stdin.write(Y.tobytes())
+            # writer.stdin.write(U.tobytes())
+            # writer.stdin.write(V.tobytes())
 
         seq_id += step
+
+        reader.stdout.close()
+        writer.stdin.close()
+        writer.wait()
 
 
 if __name__ == '__main__':
