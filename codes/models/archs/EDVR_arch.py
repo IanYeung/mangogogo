@@ -213,6 +213,7 @@ class EDVR(nn.Module):
         self.HR_in = True if HR_in else False
         self.w_TSA = w_TSA
         ResidualBlock_noBN_f = functools.partial(arch_util.ResidualBlock_noBN, nf=nf)
+        RCAB_f = functools.partial(arch_util.RCAB, n_feat=nf)
 
         #### extract features (for each frame)
         if self.is_predeblur:
@@ -238,7 +239,7 @@ class EDVR(nn.Module):
             self.tsa_fusion = nn.Conv2d(nframes * nf, nf, 1, 1, bias=True)
 
         #### reconstruction
-        self.recon_trunk = arch_util.make_layer(ResidualBlock_noBN_f, back_RBs)
+        self.recon_trunk = arch_util.make_layer(RCAB_f, back_RBs)
         #### upsampling
         self.upconv1 = nn.Conv2d(nf, nf * 4, 3, 1, 1, bias=True)
         self.upconv2 = nn.Conv2d(nf, 64 * 4, 3, 1, 1, bias=True)

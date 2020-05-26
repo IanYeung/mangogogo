@@ -266,6 +266,7 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
             kernel_size=self.kernel_size, stride=_pair(self.stride), padding=_pair(self.padding),
             bias=True)
         self.init_offset()
+        self.Hardtanh = nn.Hardtanh(min_val=-32.0, max_val=32.0, inplace=True)
 
     def init_offset(self):
         self.conv_offset_mask.weight.data.zero_()
@@ -283,8 +284,9 @@ class ModulatedDeformConvPack(ModulatedDeformConv):
         mask = torch.sigmoid(mask)
 
         offset_mean = torch.mean(torch.abs(offset))
-        if offset_mean > 100:
-            logger.warning('Offset mean is {}, larger than 100.'.format(offset_mean))
+        offset = self.Hardtanh(offset)
+        # if offset_mean > 100:
+        #    logger.warning('Offset mean is {}, larger than 100.'.format(offset_mean))
 
         return modulated_deform_conv(x, offset, mask, self.weight, self.bias, self.stride,
                                      self.padding, self.dilation, self.groups,
