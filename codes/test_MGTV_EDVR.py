@@ -19,15 +19,15 @@ def main(gpu_id, start_id, step):
     #################
     device = torch.device('cuda')
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
-    data_mode = 'AI4K'
+    data_mode = 'MGTV'
 
-    flip_test = True
-    model_path = '../experiments/pretrained_models/MGTV_EDVR.pth'  # TODO: change path
+    flip_test = False
+    model_path = '../experiments/pretrained_models/70000_G.pth'  # TODO: change path
 
     N_in = 7  # use N_in images to restore one HR image
-    model = EDVR_arch.EDVR(128, 3, N_in, 8, 5, 15, predeblur=False, HR_in=True, w_TSA=False)
+    model = EDVR_arch.EDVR(128, N_in, 8, 5, 20, predeblur=False, HR_in=True, w_TSA=False)
 
-    test_dataset_folder = ''  # TODO: change path
+    test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_frames'  # TODO: change path
 
     #### scene information
     scene_index_path = '../keys/scene_index_test.pkl'  # TODO: change path
@@ -36,7 +36,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = ''  # TODO: change path
+    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_results'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')
@@ -78,32 +78,47 @@ def main(gpu_id, start_id, step):
             imgs_in = imgs_LQ.index_select(0, torch.LongTensor(select_idx)).to(device)
             imgs_in = imgs_in.unsqueeze(0)
 
-            output_YUV = torch.zeros(1, 3, 2160, 3840)
-
-            h = 1072
-            w = 1920
+            # # inference once by using padding
+            frames = torch.zeros(1, N_in, 3, 1088, 1920).to(device)
+            frames[:, :, 0, :, :] =  16. / 255.
+            frames[:, :, 1, :, :] = 128. / 255.
+            frames[:, :, 2, :, :] = 128. / 255.
+            frames[:, :, :, 4:-4, :] = imgs_in
             if flip_test:
-                output_YUV1 = util.flipx4_forward(model, imgs_in[:, :, :, :h, :w])
-                output_YUV2 = util.flipx4_forward(model, imgs_in[:, :, :, 1080 - h:, :w])
+                output = util.flipx4_forward(model, frames)
             else:
-                output_YUV1 = util.single_forward(model, imgs_in[:, :, :, :h, :w])
-                output_YUV2 = util.single_forward(model, imgs_in[:, :, :, 1080 - h:, :w])
-
-            output_YUV[:, :, :1080, :] = output_YUV1[:, :, :1080, :]
-            output_YUV[:, :, 1080:, :] = output_YUV2[:, :, h * 4 - 1080:, :]
-
-            h_overlap = h * 2 - 1080
-            h_start = 1080 - h
-
-            for i in range(h_overlap):
-                output_YUV[:, :, (h_start + i) * 4:(h_start + i + 1) * 4, :] = output_YUV1[:, :, (h_start + i) * 4:(h_start + i + 1) * 4, :] \
-                                                                               * (h_overlap - i) / h_overlap \
-                                                                               + output_YUV2[:, :, i * 4:(i + 1) * 4, :] \
-                                                                               * i / h_overlap
-
-            output = util.tensor2img(output, reverse_channel=False)
+                output = util.single_forward(model, frames)
+            output = output[:, :, 4:-4, :]
+            output = util.tensor2img(output)
             if save_imgs:
                 cv2.imwrite(osp.join(save_subfolder, '{}.png'.format(img_name)), output)
+
+            # # inference twice and average over overlap part
+            # output_YUV = torch.zeros(1, 3, 1080, 1920)
+            #
+            # h = 1072
+            # w = 1920
+            # if flip_test:
+            #     output_YUV1 = util.flipx4_forward(model, imgs_in[:, :, :, :h, :w])
+            #     output_YUV2 = util.flipx4_forward(model, imgs_in[:, :, :, 1080 - h:, :w])
+            # else:
+            #     output_YUV1 = util.single_forward(model, imgs_in[:, :, :, :h, :w])
+            #     output_YUV2 = util.single_forward(model, imgs_in[:, :, :, 1080 - h:, :w])
+            #
+            # output_YUV[:, :, :1072, :] = output_YUV1
+            # output_YUV[:, :, -1072:, :] = output_YUV2
+            #
+            # h_overlap = h * 2 - 1080
+            # h_start = 1080 - h
+            #
+            # for i in range(h_overlap):
+            #     output_YUV[:, :, (h_start + i):(h_start + i + 1), :] = \
+            #         output_YUV1[:, :, (h_start + i):(h_start + i + 1), :] * (h_overlap - i) / h_overlap + \
+            #         output_YUV2[:, :, i:(i + 1), :] * i / h_overlap
+            #
+            # output = util.tensor2img(output_YUV)
+            # if save_imgs:
+            #     cv2.imwrite(osp.join(save_subfolder, '{}.png'.format(img_name)), output)
 
         seq_id += step
 
