@@ -60,7 +60,7 @@ def main(gpu_id, start_id, step):
     for video_path in video_path_l[start_id::step]:
         video_name = osp.basename(video_path).split('.')[0]
         logger.info('Processing: {}'.format(osp.basename(video_path)))
-        output_path = osp.join(save_folder, '{}.y4m'.format(video_name))
+        output_path = osp.join(save_folder, 'mg_refine_{}.y4m'.format(video_name.split('_')[2]))
 
         video = imageio.get_reader(video_path, format='ffmpeg', mode='I', dtype=np.uint8)
         fps = video.get_meta_data()['fps']
