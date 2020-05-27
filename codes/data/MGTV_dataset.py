@@ -135,6 +135,8 @@ class MGTVDataset(data.Dataset):
         else:
             img_GT_path = osp.join(self.GT_root, seq_name, frm_name + '.png')
             img_GT = util.read_img(None, img_GT_path)
+        if self.opt['phase'] == 'val' and self.opt['modcrop']:
+            img_GT = util.modcrop(img_GT, scale=self.opt['modcrop'])
 
         # get LQ images
         LQ_size_tuple = (3, 1080, 1920)
@@ -145,6 +147,8 @@ class MGTVDataset(data.Dataset):
             else:
                 img_LQ_path = osp.join(self.LQ_root, seq_name, '{:03d}.png'.format(v))
                 img_LQ = util.read_img(None, img_LQ_path)
+            if self.opt['phase'] == 'val' and self.opt['modcrop']:
+                img_LQ = util.modcrop(img_LQ, scale=self.opt['modcrop'])
             img_LQ_l.append(img_LQ)
 
         if self.opt['phase'] == 'train':

@@ -30,6 +30,7 @@ datasets:
     crop_w: 512
     use_flip: true
     use_rot: true
+    modcrop: 16
 
   val:
     name: MGTV
@@ -53,6 +54,7 @@ datasets:
     crop_w: 512
     use_flip: false
     use_rot: false
+    modcrop: 16
 
 
 #### network structures
