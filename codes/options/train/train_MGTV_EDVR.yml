@@ -31,6 +31,7 @@ datasets:
     use_flip: true
     use_rot: true
     modcrop: 16
+    reduce_factor: 1
 
   val:
     name: MGTV
@@ -55,6 +56,7 @@ datasets:
     use_flip: false
     use_rot: false
     modcrop: 16
+    reduce_factor: 5
 
 
 #### network structures

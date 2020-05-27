@@ -74,9 +74,9 @@ class MGTVDataset(data.Dataset):
 
         # remove the some sequences for validation
         if self.opt['phase'] == 'train':
-            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.train_seqs]
+            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.train_seqs][::self.opt['reduce_factor']]
         elif self.opt['phase'] == 'val':
-            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.valid_seqs]
+            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.valid_seqs][::self.opt['reduce_factor']]
         else:
             raise ValueError('Not support mode: {}'.format(self.opt['phase']))
         assert self.paths_GT, 'Error: GT path is empty.'
