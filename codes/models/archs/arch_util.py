@@ -38,10 +38,11 @@ def make_layer(block, n_layers):
 
 
 class ResidualBlock_noBN(nn.Module):
-    '''Residual block w/o BN
+    """
+    Residual block w/o BN
     ---Conv-ReLU-Conv-+-
      |________________|
-    '''
+    """
 
     def __init__(self, nf=64):
         super(ResidualBlock_noBN, self).__init__()
@@ -109,8 +110,7 @@ class ResidualDenseBlock_5C(nn.Module):
 
 
 class RRDB(nn.Module):
-    '''Residual in Residual Dense Block'''
-
+    """Residual in Residual Dense Block"""
     def __init__(self, nf, gc=32):
         super(RRDB, self).__init__()
         self.RDB1 = ResidualDenseBlock_5C(nf, gc)
@@ -125,7 +125,7 @@ class RRDB(nn.Module):
 
 
 class CALayer(nn.Module):
-    '''Channel Attention (CA) Layer'''
+    """Channel Attention (CA) Layer"""
     def __init__(self, channel=64, reduction=16):
         super(CALayer, self).__init__()
         # global average pooling: feature --> point
@@ -145,7 +145,7 @@ class CALayer(nn.Module):
 
 
 class RCAB(nn.Module):
-    '''Residual Channel Attention Block (RCAB)'''
+    """Residual Channel Attention Block (RCAB)"""
     def __init__(
         self, conv=default_conv, n_feat=64, kernel_size=3, reduction=16,
         bias=True, bn=False, act=nn.ReLU(inplace=True), res_scale=1):
