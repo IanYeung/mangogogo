@@ -146,10 +146,8 @@ class CALayer(nn.Module):
 
 class RCAB(nn.Module):
     """Residual Channel Attention Block (RCAB)"""
-    def __init__(
-        self, conv=default_conv, n_feat=64, kernel_size=3, reduction=16,
-        bias=True, bn=False, act=nn.ReLU(inplace=True), res_scale=1):
-
+    def __init__(self, conv=default_conv, n_feat=64, kernel_size=3, reduction=16, bias=True, bn=False,
+                 act=nn.ReLU(inplace=True), res_scale=1):
         super(RCAB, self).__init__()
         modules_body = []
         for i in range(2):
@@ -165,3 +163,29 @@ class RCAB(nn.Module):
         # res = self.body(x).mul(self.res_scale)
         res += x
         return res
+
+
+class ResidualGroup(nn.Module):
+    """Residual Group (RG)"""
+    def __init__(self, conv=default_conv, n_feat=64, kernel_size=3, reduction=16, n_resblocks=5,
+                 act=nn.ReLU(True), res_scale=1):
+        super(ResidualGroup, self).__init__()
+        modules_body = [
+            RCAB(conv, n_feat, kernel_size, reduction, bias=True, bn=False, act=act, res_scale=res_scale)
+            for _ in range(n_resblocks)
+        ]
+        modules_body.append(conv(n_feat, n_feat, kernel_size))
+        self.body = nn.Sequential(*modules_body)
+
+    def forward(self, x):
+        res = self.body(x)
+        res += x
+        return res
+
+
+if __name__ == '__main__':
+    with torch.no_grad():
+        res_group = ResidualGroup()
+        x = torch.randn(1, 64, 256, 256)
+        out = res_group(x)
+        print(out.shape)
