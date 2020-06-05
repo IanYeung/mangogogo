@@ -213,6 +213,7 @@ class EDVR(nn.Module):
         self.HR_in = True if HR_in else False
         self.w_TSA = w_TSA
         ResidualBlock_noBN_f = functools.partial(arch_util.ResidualBlock_noBN, nf=nf)
+        ResidualGroup_f = functools.partial(arch_util.ResidualGroup, n_feat=nf)
         RCAB_f = functools.partial(arch_util.RCAB, n_feat=nf)
 
         #### extract features (for each frame)
@@ -239,7 +240,7 @@ class EDVR(nn.Module):
             self.tsa_fusion = nn.Conv2d(nframes * nf, nf, 1, 1, bias=True)
 
         #### reconstruction
-        self.recon_trunk = arch_util.make_layer(RCAB_f, back_RBs)
+        self.recon_trunk = arch_util.make_layer(ResidualGroup_f, back_RBs)
         #### upsampling
         self.upconv1 = nn.Conv2d(nf, nf * 4, 3, 1, 1, bias=True)
         self.upconv2 = nn.Conv2d(nf, 64 * 4, 3, 1, 1, bias=True)
@@ -284,13 +285,15 @@ class EDVR(nn.Module):
         #### pcd align
         # ref feature list
         ref_fea_l = [
-            L1_fea[:, self.center, :, :, :].clone(), L2_fea[:, self.center, :, :, :].clone(),
+            L1_fea[:, self.center, :, :, :].clone(),
+            L2_fea[:, self.center, :, :, :].clone(),
             L3_fea[:, self.center, :, :, :].clone()
         ]
         aligned_fea = []
         for i in range(N):
             nbr_fea_l = [
-                L1_fea[:, i, :, :, :].clone(), L2_fea[:, i, :, :, :].clone(),
+                L1_fea[:, i, :, :, :].clone(),
+                L2_fea[:, i, :, :, :].clone(),
                 L3_fea[:, i, :, :, :].clone()
             ]
             aligned_fea.append(self.pcd_align(nbr_fea_l, ref_fea_l))
@@ -440,10 +443,10 @@ class EDVR_YUV420(nn.Module):
 
 
 if __name__ == '__main__':
-    net = EDVR_YUV420(w_TSA=False)
-    net.eval()
-    net.cuda()
-    y = torch.rand([1, 5, 1, 256, 256], dtype=torch.float32).cuda()
-    uv = torch.rand([1, 5, 1, 128, 128], dtype=torch.float32).cuda()
-    y, uv = net(y, uv)
-    print(y.shape, uv.shape)
+    with torch.no_grad():
+        device = torch.device('cuda:0')
+        x = torch.randn(1, 7, 3, 1088, 1920).to(device)
+        model = EDVR(nf=128, nframes=7, groups=8, front_RBs=5, back_RBs=10,
+                     center=None, predeblur=False, HR_in=True, w_TSA=False).to(device)
+        out = model(x)
+        print(out.shape)
