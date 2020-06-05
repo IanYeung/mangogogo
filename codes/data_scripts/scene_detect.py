@@ -175,19 +175,19 @@ if __name__ == '__main__':
     from scenedetect.detectors import ContentDetector
 
     ####################################################
-    # 1.video input test
-    scene_manager = MySceneManager(input_mode='video')
-
-    video_manager = VideoManager(['/home/xiyang/Downloads/VideoEnhance/train_ref/mg_train_0000_ref.y4m'])
-    video_manager.set_downscale_factor(1)
-    video_manager.start()
-
-    # Add ContentDetector algorithm (constructor takes detector options like threshold).
-    scene_manager.add_detector(ContentDetector())
-    base_timecode = video_manager.get_base_timecode()
-
-    scene_manager.detect_scenes(video_manager, step=1)
-    print(scene_manager._get_cutting_list())
+    # # 1.video input test
+    # scene_manager = MySceneManager(input_mode='video')
+    #
+    # video_manager = VideoManager(['/home/xiyang/Downloads/VideoEnhance/train_ref/mg_train_0000_ref.y4m'])
+    # video_manager.set_downscale_factor(1)
+    # video_manager.start()
+    #
+    # # Add ContentDetector algorithm (constructor takes detector options like threshold).
+    # scene_manager.add_detector(ContentDetector())
+    # base_timecode = video_manager.get_base_timecode()
+    #
+    # scene_manager.detect_scenes(video_manager, step=1)
+    # print(scene_manager._get_cutting_list())
 
     ####################################################
     # # 2.images inputs
@@ -199,3 +199,50 @@ if __name__ == '__main__':
     # scene_manager.detect_scenes(images, step=1)
     # print(scene_manager._get_cutting_list())
 
+    # # Choice 2: python interface of scenedetect library
+    # import scenedetect
+    # from scenedetect.video_manager import VideoManager
+    # from scenedetect.frame_timecode import FrameTimecode
+    # from scenedetect.stats_manager import StatsManager
+    # from scenedetect.detectors import ContentDetector
+    # from data_scripts.scene_detect import MySceneManager
+
+    import glob
+    import pickle
+    import os.path as osp
+
+    root = '/home/xiyang/Datasets/MGTV/test_damage_A'
+    file_paths = sorted(glob.glob(osp.join(root, '*.y4m')))
+
+    scene_dict = dict()
+    for file_path in file_paths:
+        file_name = osp.basename(file_path).split('.')[0]
+        video_manager = VideoManager([file_path])
+        stats_manager = StatsManager()
+        scene_manager = MySceneManager(input_mode='video')
+        # Add ContentDetector algorithm (constructor takes detector options like threshold).
+        scene_manager.add_detector(ContentDetector())
+        base_timecode = video_manager.get_base_timecode()
+
+        try:
+            video_manager.set_downscale_factor(1)
+            video_manager.start()
+            scene_manager.detect_scenes(video_manager, step=1)
+            scene_list = scene_manager.get_scene_list(base_timecode)
+            video_scene_list = []
+            for i, scene in enumerate(scene_list):
+                video_scene_list.append(scene[0].get_frames())
+                if i + 1 == len(scene_list):
+                    video_scene_list.append(scene[1].get_frames())
+            scene_dict[file_name] = video_scene_list
+            print('{}.y4m: {}'.format(file_name, video_scene_list))
+        finally:
+            video_manager.release()
+
+    print(scene_dict)
+
+    save_dict = True
+    save_path = '../../keys/scene_index_test.pkl'
+    if save_dict:
+        with open(save_path, 'wb') as f:
+            pickle.dump(scene_dict, f)
