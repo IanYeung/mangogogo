@@ -109,21 +109,6 @@ class ResidualDenseBlock_5C(nn.Module):
         return x5 * 0.2 + x
 
 
-class RRDB(nn.Module):
-    """Residual in Residual Dense Block"""
-    def __init__(self, nf, gc=32):
-        super(RRDB, self).__init__()
-        self.RDB1 = ResidualDenseBlock_5C(nf, gc)
-        self.RDB2 = ResidualDenseBlock_5C(nf, gc)
-        self.RDB3 = ResidualDenseBlock_5C(nf, gc)
-
-    def forward(self, x):
-        out = self.RDB1(x)
-        out = self.RDB2(out)
-        out = self.RDB3(out)
-        return out * 0.2 + x
-
-
 class CALayer(nn.Module):
     """Channel Attention (CA) Layer"""
     def __init__(self, channel=64, reduction=16):
@@ -181,6 +166,52 @@ class ResidualGroup(nn.Module):
         res = self.body(x)
         res += x
         return res
+
+
+class RRDB(nn.Module):
+    """Residual in Residual Dense Block"""
+    def __init__(self, nf, gc=32):
+        super(RRDB, self).__init__()
+        self.RDB1 = ResidualDenseBlock_5C(nf, gc)
+        self.RDB2 = ResidualDenseBlock_5C(nf, gc)
+        self.RDB3 = ResidualDenseBlock_5C(nf, gc)
+
+    def forward(self, x):
+        out = self.RDB1(x)
+        out = self.RDB2(out)
+        out = self.RDB3(out)
+        return out * 0.2 + x
+
+
+class RRDB_D3(nn.Module):
+    '''Residual in Residual Dense Block'''
+
+    def __init__(self, nf, gc=32):
+        super(RRDB_D3, self).__init__()
+        self.dconv1 = nn.Conv2d(nf // 2, nf, 3, 2, 1, bias=True)
+        self.dconv2 = nn.Conv2d(nf, nf, 3, 2, 1, bias=True)
+        self.RDB1 = ResidualDenseBlock_5C(nf, gc)
+        self.RDB2 = ResidualDenseBlock_5C(nf, gc)
+        self.RDB3 = ResidualDenseBlock_5C(nf, gc)
+
+        self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
+        self.uconv1 = nn.Conv2d(nf, nf*4, 3, 1, 1, bias=True)
+        self.uconv2 = nn.Conv2d(nf*2, nf*2, 3, 1, 1, bias=True)
+        self.pixel_shuffle = nn.PixelShuffle(2)
+        self.lastconv = nn.Conv2d(nf // 2, nf // 2, 3, 1, 1, bias=True)
+        self.CA = CALayer(nf // 2, 16)
+
+    def forward(self, x):
+        out0 = self.lrelu(self.dconv1(x))
+        out = self.lrelu(self.dconv2(out0))
+        out = self.RDB1(out)
+        out = self.RDB2(out)
+        out = self.RDB3(out)
+        out = self.lrelu(self.pixel_shuffle(self.uconv1(out)))
+        out = torch.cat((out,out0),1)
+        out = self.lrelu(self.pixel_shuffle(self.uconv2(out)))
+        out = self.CA(self.lastconv(out))
+        return out * 0.2 + x
 
 
 if __name__ == '__main__':

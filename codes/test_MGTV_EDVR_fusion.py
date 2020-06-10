@@ -23,11 +23,14 @@ def main(gpu_id, start_id, step):
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
     data_mode = 'MGTV'
 
-    flip_test = False
-    model_path = '../experiments/pretrained_models/EDVR_200000.pth'  # TODO: change path
+    flip_test = True
+    model1_path = '../experiments/pretrained_models/EDVR_TSA_200000.pth'  # TODO: change path
+    model2_path = '../experiments/pretrained_models/RRDBEDVR_200000_YUV420.pth'  # TODO: change path
 
-    N_in = 7  # use N_in images to restore one HR image
-    model = EDVR_arch.EDVR(128, N_in, 8, 5, 40, predeblur=False, HR_in=True, w_TSA=True)
+    N_in1 = 7  # use N_in images to restore one HR image
+    model1 = EDVR_arch.EDVR(128, N_in1, 8, 5, 20, predeblur=False, HR_in=True, w_TSA=True)
+    N_in2 = 7  # use N_in images to restore one HR image
+    model2 = EDVR_arch.EDVR_YUV420(128, N_in2, 8, 5, 15, predeblur=False, HR_in=True, w_TSA=False)
 
     test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_A'  # TODO: change path
 
@@ -38,7 +41,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_iter_200000_TSA'  # TODO: change path
+    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_fusion'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')
@@ -50,10 +53,15 @@ def main(gpu_id, start_id, step):
     logger.info('Flip test: {}'.format(flip_test))
 
     #### set up the models
-    print('Loading model from {}'.format(model_path))
-    # model.load_state_dict(torch.load(model_path), strict=True)
-    model.eval()
-    model = model.to(device)
+    print('Loading model from {}'.format(model1_path))
+    model1.load_state_dict(torch.load(model1_path), strict=True)
+    model1.eval()
+    model1 = model1.to(device)
+
+    print('Loading model from {}'.format(model2_path))
+    model2.load_state_dict(torch.load(model2_path), strict=True)
+    model2.eval()
+    model2 = model2.to(device)
 
     video_path_l = sorted(glob.glob(osp.join(test_dataset_folder, '*')))
     seq_id = start_id
@@ -112,29 +120,62 @@ def main(gpu_id, start_id, step):
 
         for img_idx, _ in enumerate(range(imgs_LQ.size(0))):
 
-            select_idx = data_util.index_generation_with_scene_list(img_idx, imgs_LQ.size(0), N_in,
+            # model1
+            select_idx = data_util.index_generation_with_scene_list(img_idx, imgs_LQ.size(0), N_in1,
                                                                     scene_dict[video_name],
                                                                     padding=padding)
             imgs_in = imgs_LQ.index_select(0, torch.LongTensor(select_idx)).to(device)
             imgs_in = imgs_in.unsqueeze(0)
 
             # # inference once by using padding
-            frames = torch.zeros(1, N_in, 3, 1088, 1920).to(device)
+            frames = torch.zeros(1, N_in1, 3, 1088, 1920).to(device)
             frames[:, :, 0, :, :] =  16. / 255.
             frames[:, :, 1, :, :] = 128. / 255.
             frames[:, :, 2, :, :] = 128. / 255.
             frames[:, :, :, 4:-4, :] = imgs_in
             if flip_test:
-                output = util.flipx4_forward(model, frames)
+                # output = util.flipx4_forward(model1, frames)
+                output = util.flipx2_forward(model1, frames)
             else:
-                output = util.single_forward(model, frames)
+                output = util.single_forward(model1, frames)
             output = output[:, :, 4:-4, :]
-            output = util.tensor2img(output, reverse_channel=False)
-            output = output.astype(np.float32)
-            Y = output[:, :, 0]
-            U = (output[0::2, 0::2, 1] + output[0::2, 1::2, 1] + output[1::2, 0::2, 1] + output[1::2, 1::2, 1]) / 4
-            V = (output[0::2, 0::2, 2] + output[0::2, 1::2, 2] + output[1::2, 0::2, 2] + output[1::2, 1::2, 2]) / 4
-            Y, U, V = Y.astype(np.uint8), U.astype(np.uint8), V.astype(np.uint8)
+
+            Y1 = output[:, 0, :, :]
+            U1 = (output[:, 1, 0::2, 0::2] + output[:, 1, 0::2, 1::2] + output[:, 1, 1::2, 0::2] + output[:, 1, 1::2, 1::2]) / 4
+            V1 = (output[:, 2, 0::2, 0::2] + output[:, 2, 0::2, 1::2] + output[:, 2, 1::2, 0::2] + output[:, 2, 1::2, 1::2]) / 4
+
+            # model2
+            # select_idx = data_util.index_generation_with_scene_list(img_idx, imgs_LQ.size(0), N_in2,
+            #                                                         scene_dict[video_name],
+            #                                                         padding=padding)
+            # imgs_in = imgs_LQ.index_select(0, torch.LongTensor(select_idx)).to(device)
+            # imgs_in = imgs_in.unsqueeze(0)
+
+            # # inference once by using padding
+            # frames = torch.zeros(1, N_in2, 3, 1088, 1920).to(device)
+            # frames[:, :, 0, :, :] = 16. / 255.
+            # frames[:, :, 1, :, :] = 128. / 255.
+            # frames[:, :, 2, :, :] = 128. / 255.
+            # frames[:, :, :, 4:-4, :] = imgs_in
+            frames_Y = frames[:, :, 0, :, :].unsqueeze(2)
+            frames_UV = frames[:, :, 1:, 0::2, 0::2]
+            if flip_test:
+                # output_Y, output_UV = util.flipx4_forward_split(model2, frames_Y, frames_UV)
+                output_Y, output_UV = util.flipx2_forward_split(model2, frames_Y, frames_UV)
+            else:
+                output_Y, output_UV = util.single_forward_split(model2, frames_Y, frames_UV)
+            Y2 = output_Y[:, :, 4:-4, :]
+            U2 = output_UV[:, 0, 2:-2, :]
+            V2 = output_UV[:, 1, 2:-2, :]
+
+            Y = (Y1 + Y2) / 2
+            U = (U1 + U2) / 2
+            V = (V1 + V2) / 2
+
+            Y = util.tensor2img(Y, reverse_channel=False)
+            U = util.tensor2img(U, reverse_channel=False)
+            V = util.tensor2img(V, reverse_channel=False)
+            # Y, U, V = Y.astype(np.uint8), U.astype(np.uint8), V.astype(np.uint8)
             writer.stdin.write(Y.tobytes())
             writer.stdin.write(U.tobytes())
             writer.stdin.write(V.tobytes())
@@ -184,7 +225,7 @@ if __name__ == '__main__':
     main(gpu_id='0', start_id=0, step=1)
 
     # manually switch gpu and use 4 gpus in testing:
-    # main(gpu_id='0', start_id=0, step=2)
-    # main(gpu_id='1', start_id=1, step=2)
+    # main(gpu_id='0', start_id=0, step=4)
+    # main(gpu_id='1', start_id=1, step=4)
     # main(gpu_id='2', start_id=2, step=4)
     # main(gpu_id='3', start_id=3, step=4)

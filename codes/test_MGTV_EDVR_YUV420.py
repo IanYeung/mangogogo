@@ -23,11 +23,11 @@ def main(gpu_id, start_id, step):
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
     data_mode = 'MGTV'
 
-    flip_test = False
-    model_path = '../experiments/pretrained_models/EDVR_200000.pth'  # TODO: change path
+    flip_test = True
+    model_path = '../experiments/pretrained_models/RRDBEDVR_200000_YUV420.pth'  # TODO: change path
 
-    N_in = 7  # use N_in images to restore one HR image
-    model = EDVR_arch.EDVR(128, N_in, 8, 5, 40, predeblur=False, HR_in=True, w_TSA=True)
+    N_in = 5  # use N_in images to restore one HR image
+    model = EDVR_arch.EDVR_YUV420(128, N_in, 8, 5, 15, predeblur=False, HR_in=True, w_TSA=False)
 
     test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_A'  # TODO: change path
 
@@ -38,7 +38,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_iter_200000_TSA'  # TODO: change path
+    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_YUV420'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')
@@ -51,7 +51,7 @@ def main(gpu_id, start_id, step):
 
     #### set up the models
     print('Loading model from {}'.format(model_path))
-    # model.load_state_dict(torch.load(model_path), strict=True)
+    model.load_state_dict(torch.load(model_path), strict=True)
     model.eval()
     model = model.to(device)
 
@@ -124,20 +124,19 @@ def main(gpu_id, start_id, step):
             frames[:, :, 1, :, :] = 128. / 255.
             frames[:, :, 2, :, :] = 128. / 255.
             frames[:, :, :, 4:-4, :] = imgs_in
+            frames_Y = frames[:, :, 0, :, :].unsqueeze(2)
+            frames_UV = frames[:, :, 1:, 0::2, 0::2]
             if flip_test:
-                output = util.flipx4_forward(model, frames)
+                output_Y, output_UV = util.flipx4_forward_split(model, frames_Y, frames_UV)
             else:
-                output = util.single_forward(model, frames)
-            output = output[:, :, 4:-4, :]
-            output = util.tensor2img(output, reverse_channel=False)
-            output = output.astype(np.float32)
-            Y = output[:, :, 0]
-            U = (output[0::2, 0::2, 1] + output[0::2, 1::2, 1] + output[1::2, 0::2, 1] + output[1::2, 1::2, 1]) / 4
-            V = (output[0::2, 0::2, 2] + output[0::2, 1::2, 2] + output[1::2, 0::2, 2] + output[1::2, 1::2, 2]) / 4
-            Y, U, V = Y.astype(np.uint8), U.astype(np.uint8), V.astype(np.uint8)
-            writer.stdin.write(Y.tobytes())
-            writer.stdin.write(U.tobytes())
-            writer.stdin.write(V.tobytes())
+                output_Y, output_UV = util.single_forward_split(model, frames_Y, frames_UV)
+            output_Y = output_Y[:, :, 4:-4, :]
+            output_UV = output_UV[:, :, 2:-2, :]
+            output_Y = util.tensor2img(output_Y, reverse_channel=False)
+            output_UV = util.tensor2img(output_UV, reverse_channel=False)
+            writer.stdin.write(output_Y.tobytes())
+            writer.stdin.write(output_UV[:, :, 0].tobytes())
+            writer.stdin.write(output_UV[:, :, 1].tobytes())
 
             # # inference twice and average over overlap part
             # output_YUV = torch.zeros(1, 3, 1080, 1920)
@@ -181,10 +180,10 @@ def main(gpu_id, start_id, step):
 
 if __name__ == '__main__':
     # testing with single gpu:
-    main(gpu_id='0', start_id=0, step=1)
+    main(gpu_id='4', start_id=3, step=4)
 
     # manually switch gpu and use 4 gpus in testing:
-    # main(gpu_id='0', start_id=0, step=2)
-    # main(gpu_id='1', start_id=1, step=2)
+    # main(gpu_id='0', start_id=0, step=4)
+    # main(gpu_id='1', start_id=1, step=4)
     # main(gpu_id='2', start_id=2, step=4)
     # main(gpu_id='3', start_id=3, step=4)

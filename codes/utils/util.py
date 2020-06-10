@@ -198,6 +198,25 @@ def single_forward(model, inp):
     return output
 
 
+def flipx2_forward(model, inp):
+    """Flip testing with X2 self ensemble
+    Args:
+        model (PyTorch model)
+        inp (Tensor): inputs defined by the model
+
+    Returns:
+        output (Tensor): outputs of the model. float, in CPU
+    """
+    # normal
+    output_f = single_forward(model, inp)
+
+    # flip both H and W
+    output = single_forward(model, torch.flip(inp, (-2, -1)))
+    output_f = output_f + torch.flip(output, (-2, -1))
+
+    return output_f / 2
+
+
 def flipx4_forward(model, inp):
     """Flip testing with X4 self ensemble, i.e., normal, flip H, flip W, flip H and W
     Args:
@@ -221,6 +240,70 @@ def flipx4_forward(model, inp):
     output_f = output_f + torch.flip(output, (-2, -1))
 
     return output_f / 4
+
+
+def single_forward_split(model, inp1, inp2):
+    """PyTorch model forward (single test), it is just a simple warpper
+    Args:
+        model (PyTorch model)
+        inp (Tensor): inputs defined by the model
+
+    Returns:
+        output (Tensor): outputs of the model. float, in CPU
+    """
+    with torch.no_grad():
+        model_output1, model_output2 = model(inp1, inp2)
+    output1 = model_output1.data.float().cpu()
+    output2 = model_output2.data.float().cpu()
+    return output1, output2
+
+
+def flipx2_forward_split(model, inp1, inp2):
+    """Flip testing with X2 self ensemble
+    Args:
+        model (PyTorch model)
+        inp (Tensor): inputs defined by the model
+
+    Returns:
+        output (Tensor): outputs of the model. float, in CPU
+    """
+    # normal
+    output1_f, output2_f = single_forward_split(model, inp1, inp2)
+
+    # flip both H and W
+    output1, output2 = single_forward_split(model, torch.flip(inp1, (-2, -1)), torch.flip(inp2, (-2, -1)))
+    output1_f = output1_f + torch.flip(output1, (-2, -1))
+    output2_f = output2_f + torch.flip(output2, (-2, -1))
+
+    return output1_f / 2, output2_f / 2
+
+
+def flipx4_forward_split(model, inp1, inp2):
+    """Flip testing with X4 self ensemble, i.e., normal, flip H, flip W, flip H and W
+    Args:
+        model (PyTorch model)
+        inp (Tensor): inputs defined by the model
+
+    Returns:
+        output (Tensor): outputs of the model. float, in CPU
+    """
+    # normal
+    output1_f, output2_f = single_forward_split(model, inp1, inp2)
+
+    # flip W
+    output1, output2 = single_forward_split(model, torch.flip(inp1, (-1, )), torch.flip(inp2, (-1, )))
+    output1_f = output1_f + torch.flip(output1, (-1, ))
+    output2_f = output2_f + torch.flip(output2, (-1, ))
+    # flip H
+    output1, output2 = single_forward_split(model, torch.flip(inp1, (-2, )), torch.flip(inp2, (-2, )))
+    output1_f = output1_f + torch.flip(output1, (-2, ))
+    output2_f = output2_f + torch.flip(output2, (-2, ))
+    # flip both H and W
+    output1, output2 = single_forward_split(model, torch.flip(inp1, (-2, -1)), torch.flip(inp2, (-2, -1)))
+    output1_f = output1_f + torch.flip(output1, (-2, -1))
+    output2_f = output2_f + torch.flip(output2, (-2, -1))
+
+    return output1_f / 4, output2_f / 4
 
 
 ####################

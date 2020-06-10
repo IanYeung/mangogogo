@@ -240,7 +240,7 @@ class EDVR(nn.Module):
             self.tsa_fusion = nn.Conv2d(nframes * nf, nf, 1, 1, bias=True)
 
         #### reconstruction
-        self.recon_trunk = arch_util.make_layer(ResidualGroup_f, back_RBs)
+        self.recon_trunk = arch_util.make_layer(RCAB_f, back_RBs)
         #### upsampling
         self.upconv1 = nn.Conv2d(nf, nf * 4, 3, 1, 1, bias=True)
         self.upconv2 = nn.Conv2d(nf, 64 * 4, 3, 1, 1, bias=True)
@@ -325,11 +325,11 @@ class EDVR_YUV420(nn.Module):
         self.is_predeblur = True if predeblur else False
         self.HR_in = True if HR_in else False
         self.w_TSA = w_TSA
-        self.Y_first_conv = nn.Conv2d(1, 16, 7, 2, 3, bias=True)
-        self.UV_first_conv = nn.Conv2d(1, 16, 7, 1, 3, bias=True)
+        self.Y_first_conv = nn.Conv2d(1, 32, 7, 2, 3, bias=True)
+        self.UV_first_conv = nn.Conv2d(2, 16, 7, 1, 3, bias=True)
 
         ResidualBlock_noBN_f = functools.partial(arch_util.ResidualBlock_noBN, nf=nf)
-        RRDB_block_f = functools.partial(arch_util.RRDB, nf=nf, gc=32)
+        RRDB_block_f = functools.partial(arch_util.RRDB_D3, nf=nf, gc=32)
 
         #### extract features (for each frame)
         if self.is_predeblur:
@@ -337,11 +337,10 @@ class EDVR_YUV420(nn.Module):
             self.conv_1x1 = nn.Conv2d(nf, nf, 1, 1, bias=True)
         else:
             if self.HR_in:
-                self.conv_first_1 = nn.Conv2d(32, nf, 3, 1, 1, bias=True)
+                self.conv_first_1 = nn.Conv2d(48, nf, 3, 1, 1, bias=True)
                 self.conv_first_2 = nn.Conv2d(nf, nf, 3, 2, 1, bias=True)
-                self.conv_first_3 = nn.Conv2d(nf, nf, 3, 2, 1, bias=True)
             else:
-                self.conv_first = nn.Conv2d(3, nf, 3, 1, 1, bias=True)
+                self.conv_first = nn.Conv2d(48, nf, 3, 1, 1, bias=True)
         self.feature_extraction = arch_util.make_layer(ResidualBlock_noBN_f, front_RBs)
         self.fea_L2_conv1 = nn.Conv2d(nf, nf, 3, 2, 1, bias=True)
         self.fea_L2_conv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
@@ -352,23 +351,24 @@ class EDVR_YUV420(nn.Module):
         if self.w_TSA:
             self.tsa_fusion = TSA_Fusion(nf=nf, nframes=nframes, center=self.center)
         else:
-            self.tsa_fusion = nn.Conv2d(nframes * nf, nf, 1, 1, bias=True)
+            self.tsa_fusion = nn.Conv2d(nframes * nf, nf * 2, 3, 1, 1, bias=True)
 
         #### reconstruction
         self.recon_trunk = arch_util.make_layer(RRDB_block_f, back_RBs)
         #### upsampling
-        self.upconv1 = nn.Conv2d(nf, nf * 4, 3, 1, 1, bias=True)
-        self.upconv2 = nn.Conv2d(nf, 64 * 4, 3, 1, 1, bias=True)
+        # self.upconv1 = nn.Conv2d(nf, nf * 4, 3, 1, 1, bias=True)
+        # self.upconv2 = nn.Conv2d(nf, 64 * 4, 3, 1, 1, bias=True)
         self.pixel_shuffle = nn.PixelShuffle(2)
-        self.Y_HRconv = nn.Conv2d(64, 64, 3, 1, 1, bias=True)
-        self.Y_last_conv = nn.Conv2d(16, 1, 3, 1, 1, bias=True)
-        self.UV_HRconv = nn.Conv2d(64, 16, 3, 1, 1, bias=True)
-        self.UV_last_conv = nn.Conv2d(16, 1, 3, 1, 1, bias=True)
+        self.Y_HRconv = nn.Conv2d(nf // 2, 128, 3, 1, 1, bias=True)
+        self.Y_last_conv = nn.Conv2d(32, 1, 3, 1, 1, bias=True)
+        self.UV_HRconv = nn.Conv2d(nf // 2, 32, 3, 1, 1, bias=True)
+        self.UV_last_conv = nn.Conv2d(32, 2, 3, 1, 1, bias=True)
 
         #### activation function
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
 
     def forward(self, y, uv):
+
         B, N, C, H, W = y.size()  # N video frames
         Y_center = y[:, self.center, :, :, :].contiguous()
         UV_center = uv[:, self.center, :, :, :].contiguous()
@@ -376,25 +376,19 @@ class EDVR_YUV420(nn.Module):
         #### extract and concat Y, UV features
         Y_fea = self.Y_first_conv(y.view(-1, C, H, W))
         H, W = H // 2, W // 2
-        UV_fea = self.UV_first_conv(uv.view(-1, C, H, W))
+        UV_fea = self.UV_first_conv(uv.view(-1, C*2, H, W))
 
         x = torch.cat((Y_fea, UV_fea),1)
 
         #### extract LR features
         # L1
-        if self.is_predeblur:
-            L1_fea = self.pre_deblur(x.view(-1, C, H, W))
-            L1_fea = self.conv_1x1(L1_fea)
-            if self.HR_in:
-                H, W = H // 4, W // 4
+        if self.HR_in:
+            L1_fea = self.lrelu(self.conv_first_1(x))
+            L1_fea = self.lrelu(self.conv_first_2(L1_fea))
+            H, W = H // 2, W // 2
         else:
-            if self.HR_in:
-                L1_fea = self.lrelu(self.conv_first_1(x))
-                L1_fea = self.lrelu(self.conv_first_2(L1_fea))
-                L1_fea = self.lrelu(self.conv_first_3(L1_fea))
-                H, W = H // 4, W // 4
-            else:
-                L1_fea = self.lrelu(self.conv_first(x.view(-1, C, H, W)))
+            L1_fea = self.lrelu(self.conv_first(x))
+
         L1_fea = self.feature_extraction(L1_fea)
         # L2
         L2_fea = self.lrelu(self.fea_L2_conv1(L1_fea))
@@ -425,10 +419,10 @@ class EDVR_YUV420(nn.Module):
         if not self.w_TSA:
             aligned_fea = aligned_fea.view(B, -1, H, W)
         fea = self.tsa_fusion(aligned_fea)
+        fea = self.pixel_shuffle(fea)
 
         out = self.recon_trunk(fea)
-        out = self.lrelu(self.pixel_shuffle(self.upconv1(out)))
-        out = self.lrelu(self.pixel_shuffle(self.upconv2(out)))
+        # out = self.lrelu(self.pixel_shuffle(self.upconv1(out)))
 
         #### output Y, UV separately
         out_Y = self.lrelu(self.pixel_shuffle(self.Y_HRconv(out)))
