@@ -26,7 +26,7 @@ def main(gpu_id, start_id, step):
     flip_test = True
     model_path = '../experiments/pretrained_models/RRDBEDVR_200000_YUV420.pth'  # TODO: change path
 
-    N_in = 5  # use N_in images to restore one HR image
+    N_in = 7  # use N_in images to restore one HR image
     model = EDVR_arch.EDVR_YUV420(128, N_in, 8, 5, 15, predeblur=False, HR_in=True, w_TSA=False)
 
     test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_A'  # TODO: change path
