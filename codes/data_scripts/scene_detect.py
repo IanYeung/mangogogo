@@ -211,7 +211,7 @@ if __name__ == '__main__':
     import pickle
     import os.path as osp
 
-    root = '/home/xiyang/Datasets/MGTV/test_damage_A'
+    root = '/home/xiyang/Datasets/MGTV/test_damage_B_y4m'
     file_paths = sorted(glob.glob(osp.join(root, '*.y4m')))
 
     scene_dict = dict()
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     print(scene_dict)
 
     save_dict = True
-    save_path = '../../keys/scene_index_test.pkl'
+    save_path = '../../keys/scene_index_test_B.pkl'
     if save_dict:
         with open(save_path, 'wb') as f:
             pickle.dump(scene_dict, f)
