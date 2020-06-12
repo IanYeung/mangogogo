@@ -21,7 +21,7 @@ except ImportError:
 
 
 def OrderedYaml():
-    '''yaml orderedDict support'''
+    """yaml orderedDict support"""
     _mapping_tag = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
 
     def dict_representer(dumper, data):

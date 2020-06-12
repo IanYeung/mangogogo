@@ -38,7 +38,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_YUV420'  # TODO: change path
+    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_A_iter_200000_YUV420'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')
@@ -127,7 +127,8 @@ def main(gpu_id, start_id, step):
             frames_Y = frames[:, :, 0, :, :].unsqueeze(2)
             frames_UV = frames[:, :, 1:, 0::2, 0::2]
             if flip_test:
-                output_Y, output_UV = util.flipx4_forward_split(model, frames_Y, frames_UV)
+                # output_Y, output_UV = util.flipx4_forward_split(model, frames_Y, frames_UV)
+                output_Y, output_UV = util.flipx2_forward_split(model, frames_Y, frames_UV)
             else:
                 output_Y, output_UV = util.single_forward_split(model, frames_Y, frames_UV)
             output_Y = output_Y[:, :, 4:-4, :]
@@ -180,7 +181,7 @@ def main(gpu_id, start_id, step):
 
 if __name__ == '__main__':
     # testing with single gpu:
-    main(gpu_id='4', start_id=3, step=4)
+    main(gpu_id='0', start_id=0, step=1)
 
     # manually switch gpu and use 4 gpus in testing:
     # main(gpu_id='0', start_id=0, step=4)
