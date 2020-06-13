@@ -10,7 +10,7 @@ RUN conda update -y conda
 
 RUN mkdir /workspace && cd /workspace && mkdir mgtv
 COPY . /workspace/mgtv
-RUN pip install torch==1.4.0+cu100 torchvision==0.5.0+cu100 -f https://download.pytorch.org/whl/torch_stable.html
+RUN conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
 RUN cd /workspace/mgtv && pip install -r requirements.txt
 RUN cd /workspace/mgtv/codes/models/archs/dcn && python setup.py develop
 
