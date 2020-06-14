@@ -8,21 +8,23 @@ import utils.util as util  # noqa: E402
 
 
 if __name__ == '__main__':
-    # download
-    root = '/data'
-    link = 'link.txt'
-    util.mkdir(root)
-    with open(link, 'r') as f:
-        lines = f.readlines()
-    for line in lines:
-        os.system("wget -P {} {}".format(root, line))
 
-    # unzip
-    paths = sorted(glob.glob(os.path.join(root, '*.zip')))
-    for path in paths:
-        command = 'unzip {} -d {}'.format(path, root)
-        print(command)
-        os.system(command)
+    root = '/data'
+
+    # # download
+    # link = 'link.txt'
+    # util.mkdir(root)
+    # with open(link, 'r') as f:
+    #     lines = f.readlines()
+    # for line in lines:
+    #     os.system("wget -P {} {}".format(root, line))
+    #
+    # # unzip
+    # paths = sorted(glob.glob(os.path.join(root, '*.zip')))
+    # for path in paths:
+    #     command = 'unzip {} -d {}'.format(path, root)
+    #     print(command)
+    #     os.system(command)
     
     # move
     util.mkdir(os.path.join(root, 'LQ'))
