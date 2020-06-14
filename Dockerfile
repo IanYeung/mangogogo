@@ -8,12 +8,12 @@ RUN rm Miniconda3-latest-Linux-x86_64.sh
 ENV PATH=/miniconda3/bin:${PATH}
 RUN conda update -y conda
 
-RUN mkdir /workspace && cd /workspace && mkdir mgtv
-COPY . /workspace/mgtv
+RUN cd /opt && mkdir mgtv
+COPY . /opt/mgtv
 RUN conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
-RUN cd /workspace/mgtv && pip install -r requirements.txt
-RUN cd /workspace/mgtv/codes/models/archs/dcn && python setup.py develop
+RUN cd /opt/mgtv && pip install -r requirements.txt
+RUN cd /opt/mgtv/codes/models/archs/dcn && python setup.py develop
 
-WORKDIR /workspace
-#RUN chmod 777 /workspace/mgtv/codes/test.sh
-#CMD ["/bin/bash", "-c", "/workspace/mgtv/codes/test.sh"]
+WORKDIR /opt
+#RUN chmod 777 /opt/mgtv/codes/run.sh
+#CMD ["/bin/bash", "-c", "/opt/mgtv/codes/run.sh"]

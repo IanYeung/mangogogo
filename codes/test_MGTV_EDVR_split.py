@@ -38,7 +38,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = '/data/test_damage_B_iter_400000_YUV420'  # TODO: change path
+    save_folder = '/data/output'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')
