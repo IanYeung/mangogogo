@@ -1,4 +1,4 @@
-# mgtv
+# mangogogo
 
 ## Prerequisites
 
@@ -13,18 +13,18 @@ We provide an Dockerfile in this repository.
 
 * Clone this repository.
 ```
-git clone https://github.com/IanYeung/mgtv
-cd mgtv
+git clone https://github.com/IanYeung/mangogogo
+cd mangogogo
 ```
 
 * Build the image.
 ```
-docker build -t mgtv -f Dockerfile .
+docker build -t mangogogo -f Dockerfile .
 ```
 
 * Start the image (please replace "/data" before the ":" sign with the data root on your local machine).
 ```
-docker run --gpus all -it -v /data:/data --ipc=host mgtv
+docker run --gpus all -it -v /data:/data --ipc=host mangogogo
 ```
 
 * You are now good to go.
@@ -33,8 +33,8 @@ docker run --gpus all -it -v /data:/data --ipc=host mgtv
 * Clone this repository
 
 ```
-git clone https://github.com/IanYeung/mgtv
-cd mgtv
+git clone https://github.com/IanYeung/mangogogo
+cd mangogogo
 ```
 
 * Install dependencies
