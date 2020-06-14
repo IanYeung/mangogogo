@@ -30,7 +30,6 @@ datasets:
     crop_w: 512
     use_flip: true
     use_rot: true
-    modcrop: 16
     reduce_factor: 1
     split: false
 
@@ -56,7 +55,6 @@ datasets:
     crop_w: 512
     use_flip: false
     use_rot: false
-    modcrop: 16
     reduce_factor: 5
     split: false
 
@@ -94,7 +92,7 @@ train:
 
   pixel_criterion: l2
   pixel_weight: 1.0
-  val_freq: !!float 5e3
+  val_freq: !!float 1e4
 
   manual_seed: 0
 

@@ -14,7 +14,7 @@ logger = logging.getLogger('base')
 
 
 class MGTVDataset(data.Dataset):
-    """
+    '''
     Reading the MGTV dataset for training
     Key example: XXXX_XXX
         1st part: sequence name
@@ -22,7 +22,7 @@ class MGTVDataset(data.Dataset):
     GT: Ground-Truth Frame;
     LQ: Low-Quality Frames;
     Support reading N LQ frames, N = 1, 3, 5, 7, ...
-    """
+    '''
 
     def __init__(self, opt):
         super(MGTVDataset, self).__init__()
@@ -74,9 +74,9 @@ class MGTVDataset(data.Dataset):
 
         # remove the some sequences for validation
         if self.opt['phase'] == 'train':
-            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.train_seqs][::self.opt['reduce_factor']]
+            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.train_seqs]
         elif self.opt['phase'] == 'val':
-            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.valid_seqs][::self.opt['reduce_factor']]
+            self.paths_GT = [v for v in self.paths_GT if v.split('_')[0] in self.valid_seqs][::5]
         else:
             raise ValueError('Not support mode: {}'.format(self.opt['phase']))
         assert self.paths_GT, 'Error: GT path is empty.'
@@ -135,8 +135,6 @@ class MGTVDataset(data.Dataset):
         else:
             img_GT_path = osp.join(self.GT_root, seq_name, frm_name + '.png')
             img_GT = util.read_img(None, img_GT_path)
-        if self.opt['phase'] == 'val' and self.opt['modcrop']:
-            img_GT = util.modcrop(img_GT, scale=self.opt['modcrop'])
 
         # get LQ images
         LQ_size_tuple = (3, 1080, 1920)
@@ -147,8 +145,6 @@ class MGTVDataset(data.Dataset):
             else:
                 img_LQ_path = osp.join(self.LQ_root, seq_name, '{:03d}.png'.format(v))
                 img_LQ = util.read_img(None, img_LQ_path)
-            if self.opt['phase'] == 'val' and self.opt['modcrop']:
-                img_LQ = util.modcrop(img_LQ, scale=self.opt['modcrop'])
             img_LQ_l.append(img_LQ)
 
         if self.opt['phase'] == 'train':
@@ -164,17 +160,21 @@ class MGTVDataset(data.Dataset):
             rlt = util.augment(img_LQ_l, self.opt['use_flip'], self.opt['use_rot'])
             img_LQ_l = rlt[0:-1]
             img_GT = rlt[-1]
+        elif self.opt['phase'] == 'val':
+            rnd_h = 12
+            crop_h = 1056
+            img_LQ_l = [v[rnd_h:rnd_h + crop_h, :, :] for v in img_LQ_l]
+            img_GT = img_GT[rnd_h:rnd_h + crop_h, :, :]
 
         # stack LQ images to NHWC, N is the frame number
         img_LQs = np.stack(img_LQ_l, axis=0)
         # HWC to CHW, numpy to tensor
         img_GT = torch.from_numpy(np.ascontiguousarray(np.transpose(img_GT, (2, 0, 1)))).float()
         img_LQs = torch.from_numpy(np.ascontiguousarray(np.transpose(img_LQs, (0, 3, 1, 2)))).float()
-
         if self.opt['split']:
-            img_GT_Y = img_GT[0, :, :]
+            img_GT_Y = img_GT[0, :, :].unsqueeze(0)
             img_GT_UV = img_GT[1:, 0::2, 0::2]
-            img_LQs_Y = img_LQs[:, 0, :, :]
+            img_LQs_Y = img_LQs[:, 0, :, :].unsqueeze(1)
             img_LQs_UV = img_LQs[:, 1:, 0::2, 0::2]
             return {'LQs_Y': img_LQs_Y, 'LQs_UV': img_LQs_UV, 'GT_Y': img_GT_Y, 'GT_UV': img_GT_UV, 'key': key}
         else:

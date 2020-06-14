@@ -28,7 +28,8 @@ def init_dist(backend='nccl', **kwargs):
 def main():
     #### options
     parser = argparse.ArgumentParser()
-    parser.add_argument('-opt', type=str, help='Path to option YAML file.')
+    parser.add_argument('-opt', default='options/train/train_MGTV_EDVR.yml', type=str,
+                        help='Path to option YAML file.')
     parser.add_argument('--launcher', choices=['none', 'pytorch'], default='none',
                         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
@@ -291,7 +292,7 @@ def main():
                         #     tb_logger.add_scalar('psnr_avg', psnr_total_avg, current_step)
                         #     for k, v in psnr_rlt_avg.items():
                         #         tb_logger.add_scalar(k, v, current_step)
-                        
+
                         pbar = util.ProgressBar(len(val_loader))
                         psnr_y_sum, psnr_y_avg = 0., 0.
                         psnr_u_sum, psnr_u_avg = 0., 0.
@@ -310,7 +311,7 @@ def main():
                         psnr_y_avg = psnr_y_sum / len(val_loader)
                         psnr_u_avg = psnr_u_sum / len(val_loader)
                         psnr_v_avg = psnr_v_sum / len(val_loader)
-                        
+
                         # print out information
                         logger.info('# Validation # PSNR of Y channel: {:.2f} dB'.format(psnr_y_avg))
                         logger.info('# Validation # PSNR of U channel: {:.2f} dB'.format(psnr_u_avg))

@@ -29,7 +29,6 @@ datasets:
     crop_w: 1024
     use_flip: true
     use_rot: false
-    modcrop: 16
     reduce_factor: 1
     split: true
 
@@ -54,7 +53,6 @@ datasets:
     crop_w: 512
     use_flip: false
     use_rot: false
-    modcrop: 16
     reduce_factor: 1
     split: true
 
@@ -82,7 +80,7 @@ train:
   lr_scheme: CosineAnnealingLR_Restart
   beta1: 0.9
   beta2: 0.99
-  niter: 200000
+  niter: 400000
   warmup_iter: -1  # -1: no warm up
   T_period: [200000, 200000]
   restarts: [200000]
@@ -91,7 +89,7 @@ train:
 
   pixel_criterion: cb
   pixel_weight: 1.0
-  val_freq: !!float 5e3
+  val_freq: !!float 1e4
 
   manual_seed: 0
 

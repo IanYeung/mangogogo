@@ -24,8 +24,8 @@ def main(gpu_id, start_id, step):
     data_mode = 'MGTV'
 
     flip_test = True
-    model1_path = '../experiments/pretrained_models/EDVR_TSA_200000.pth'  # TODO: change path
-    model2_path = '../experiments/pretrained_models/RRDBEDVR_200000_YUV420.pth'  # TODO: change path
+    model1_path = '../experiments/pretrained_models/EDVR_TSA_400000.pth'  # TODO: change path
+    model2_path = '../experiments/pretrained_models/RRDBEDVR_400000_YUV420.pth'  # TODO: change path
 
     N_in1 = 7  # use N_in images to restore one HR image
     model1 = EDVR_arch.EDVR(128, N_in1, 8, 5, 20, predeblur=False, HR_in=True, w_TSA=True)

@@ -23,7 +23,7 @@ def main(gpu_id, start_id, step):
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_id
     data_mode = 'MGTV'
 
-    flip_test = False
+    flip_test = True
     model_path = '../experiments/pretrained_models/EDVR_TSA_400000.pth'  # TODO: change path
 
     N_in = 7  # use N_in images to restore one HR image
