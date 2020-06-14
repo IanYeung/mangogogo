@@ -15,5 +15,5 @@ RUN cd /opt/mangogogo && pip install -r requirements.txt
 RUN cd /opt/mangogogo/codes/models/archs/dcn && python setup.py develop
 
 WORKDIR /opt
-#RUN chmod 777 /opt/mangogogo/codes/run.sh
-#CMD ["/bin/bash", "-c", "/opt/mangogogo/codes/run.sh"]
+RUN chmod 777 /opt/mangogogo/codes/run.sh
+CMD ["/bin/bash", "-c", "/opt/mangogogo/codes/run.sh"]
