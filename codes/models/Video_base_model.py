@@ -105,44 +105,69 @@ class VideoBaseModel(BaseModel):
 
             self.log_dict = OrderedDict()
 
-    def feed_data(self, data, need_GT=True):
-        self.var_L = data['LQs'].to(self.device)
-        if need_GT:
-            self.real_H = data['GT'].to(self.device)
+    def feed_data(self, data, need_GT=True, split=False):
+        if not split:
+            self.var_L = data['LQs'].to(self.device)
+            if need_GT:
+                self.real_H = data['GT'].to(self.device)
+        else:
+            self.var_L_Y = data['LQs_Y'].to(self.device)
+            self.var_L_UV = data['LQs_UV'].to(self.device)
+            if need_GT:
+                self.real_H_Y = data['GT_Y'].to(self.device)
+                self.real_H_UV = data['GT_UV'].to(self.device)
 
     def set_params_lr_zero(self):
         # fix normal module
         self.optimizers[0].param_groups[0]['lr'] = 0
 
-    def optimize_parameters(self, step):
+    def optimize_parameters(self, step, split=False):
         if self.opt['train']['ft_tsa_only'] and step < self.opt['train']['ft_tsa_only']:
             self.set_params_lr_zero()
 
         self.optimizer_G.zero_grad()
-        self.fake_H = self.netG(self.var_L)
-
-        l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
+        if not split:
+            self.fake_H = self.netG(self.var_L)
+            l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
+        else:
+            self.fake_H_Y, self.fake_H_UV = self.netG(self.var_L_Y, self.var_L_UV)
+            # print(self.fake_H_Y.shape,self.real_H_Y.shape,self.fake_H_UV.shape,self.real_H_UV.shape)
+            l_pix = self.l_pix_w * self.cri_pix(self.fake_H_Y, self.real_H_Y) + \
+                    self.l_pix_w * self.cri_pix(self.fake_H_UV, self.real_H_UV)
         l_pix.backward()
         self.optimizer_G.step()
 
         # set log
         self.log_dict['l_pix'] = l_pix.item()
 
-    def test(self):
+    def test(self, split=False):
         self.netG.eval()
         with torch.no_grad():
-            self.fake_H = self.netG(self.var_L)
+            if not split:
+                self.fake_H = self.netG(self.var_L)
+            else:
+                self.fake_H_Y, self.fake_H_UV = self.netG(self.var_L_Y, self.var_L_UV)
+
         self.netG.train()
 
     def get_current_log(self):
         return self.log_dict
 
-    def get_current_visuals(self, need_GT=True):
+    def get_current_visuals(self, need_GT=True, split=False):
         out_dict = OrderedDict()
-        out_dict['LQ'] = self.var_L.detach()[0].float().cpu()
-        out_dict['rlt'] = self.fake_H.detach()[0].float().cpu()
-        if need_GT:
-            out_dict['GT'] = self.real_H.detach()[0].float().cpu()
+        if not split:
+            out_dict['LQ'] = self.var_L.detach()[0].float().cpu()
+            out_dict['rlt'] = self.fake_H.detach()[0].float().cpu()
+            if need_GT:
+                out_dict['GT'] = self.real_H.detach()[0].float().cpu()
+        else:
+            out_dict['LQ_Y'] = self.var_L_Y.detach()[0].float().cpu()
+            out_dict['LQ_UV'] = self.var_L_UV.detach()[0].float().cpu()
+            out_dict['rlt_Y'] = self.fake_H_Y.detach()[0].float().cpu()
+            out_dict['rlt_UV'] = self.fake_H_UV.detach()[0].float().cpu()
+            if need_GT:
+                out_dict['GT_Y'] = self.real_H_Y.detach()[0].float().cpu()
+                out_dict['GT_UV'] = self.real_H_UV.detach()[0].float().cpu()
         return out_dict
 
     def print_network(self):

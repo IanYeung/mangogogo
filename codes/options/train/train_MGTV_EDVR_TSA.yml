@@ -1,5 +1,5 @@
 #### general settings
-name: MGTV_EDVR
+name: MGTV_EDVR_TSA
 use_tb_logger: true
 model: video_base
 distortion: sr
@@ -18,13 +18,13 @@ datasets:
     dataroot_LQ: /data/LQ_frames
     cache_keys: ../keys/all_keys.pkl
     outlier_seqs: ~
-    train_seqs: ../keys/train_seqs.pkl
+    train_seqs: ../keys/all_seqs.pkl
     valid_seqs: ../keys/valid_seqs.pkl
     scene_index: ../keys/scene_index.pkl
 
     N_frames: 7
     use_shuffle: true
-    n_workers: 3  # per GPU
+    n_workers: 8  # per GPU
     batch_size: 16
     crop_h: 512
     crop_w: 512
@@ -44,13 +44,13 @@ datasets:
     dataroot_LQ: /data/LQ_frames
     cache_keys: ../keys/all_keys.pkl
     outlier_seqs: ~
-    train_seqs: ../keys/train_seqs.pkl
+    train_seqs: ../keys/all_seqs.pkl
     valid_seqs: ../keys/valid_seqs.pkl
     scene_index: ../keys/scene_index.pkl
 
     N_frames: 7
     use_shuffle: false
-    n_workers: 3  # per GPU
+    n_workers: 8  # per GPU
     batch_size: 1
     crop_h: 512
     crop_w: 512
@@ -70,11 +70,11 @@ network_G:
   back_RBs: 20
   predeblur: false
   HR_in: true
-  w_TSA: false
+  w_TSA: true
 
 #### path
 path:
-  pretrain_model_G: ~
+  pretrain_model_G: ../experiments/pretrained_models/EDVR_400000.pth
   strict_load: false
   resume_state: ~
 
@@ -85,15 +85,16 @@ train:
   beta1: 0.9
   beta2: 0.99
   niter: 400000
+  ft_tsa_only: 50000
   warmup_iter: -1  # -1: no warm up
-  T_period: [200000, 200000]
-  restarts: [200000]
-  restart_weights: [1]
+  T_period: [50000, 150000, 200000]
+  restarts: [50000, 200000]
+  restart_weights: [1.0, 0.5]
   eta_min: !!float 1e-7
 
   pixel_criterion: l2
   pixel_weight: 1.0
-  val_freq: !!float 2e3
+  val_freq: !!float 5e3
 
   manual_seed: 0
 

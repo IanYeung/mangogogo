@@ -80,16 +80,31 @@ def extract_frames_from_single_video(video_path, out_path, mode='png'):
 if __name__ == '__main__':
 
     # root
-    src_root = '/home/xiyang/Downloads/VideoEnhance/test_damage_A'
-    dst_root = '/home/xiyang/Downloads/VideoEnhance/test_damage_A_frames'
+    src_root = '/data/LQ'
+    dst_root = '/data/LQ_frames'
 
-    # single videos
-    video_path = '/home/xiyang/Downloads/VideoEnhance/test_damage_A/mg_test_0800_damage.y4m'
-    out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
-    extract_frames_from_single_video(video_path, out_path)
+    # # single videos
+    # video_path = '/home/xiyang/Downloads/VideoEnhance/test_damage_A/mg_test_0800_damage.y4m'
+    # out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
+    # extract_frames_from_single_video(video_path, out_path)
 
     # multiple videos
-    # video_paths = sorted(glob.glob(osp.join(src_root, '*.y4m')))
-    # for video_path in video_paths:
-    #     out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
-    #     extract_frames_from_single_video(video_path, out_path)
+    video_paths = sorted(glob.glob(osp.join(src_root, '*.y4m')))
+    for video_path in video_paths:
+        out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
+        extract_frames_from_single_video(video_path, out_path)
+
+    # root
+    src_root = '/data/GT'
+    dst_root = '/data/GT_frames'
+
+    # # single videos
+    # video_path = '/home/xiyang/Downloads/VideoEnhance/test_damage_A/mg_test_0800_damage.y4m'
+    # out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
+    # extract_frames_from_single_video(video_path, out_path)
+
+    # multiple videos
+    video_paths = sorted(glob.glob(osp.join(src_root, '*.y4m')))
+    for video_path in video_paths:
+        out_path = osp.join(dst_root, osp.basename(video_path).split('.')[0])
+        extract_frames_from_single_video(video_path, out_path)

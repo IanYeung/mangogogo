@@ -9,8 +9,8 @@ import utils.util as util  # noqa: E402
 
 if __name__ == '__main__':
     # download
-    root = '/data/yangxi/MGTV'
-    link = '/data/yangxi/MGTV/link.txt'
+    root = '/data'
+    link = 'link.txt'
     util.mkdir(root)
     with open(link, 'r') as f:
         lines = f.readlines()

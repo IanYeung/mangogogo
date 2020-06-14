@@ -81,7 +81,7 @@ def scene_index(root, verbose=False, save_dict=False, save_path=None):
 
 if __name__ == '__main__':
     
-    root = '/data/yangxi/MGTV/GT_frames'
+    root = '/data'
     
     
     #### save all keys
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     from scenedetect.detectors import ContentDetector
     from data_scripts.scene_detect import MySceneManager
 
-    root = '/data/yangxi/MGTV/GT'
+    root = '/data/GT'
     file_paths = sorted(glob.glob(osp.join(root, '*.y4m')))
 
     scene_dict = dict()

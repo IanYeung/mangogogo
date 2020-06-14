@@ -24,12 +24,12 @@ def main(gpu_id, start_id, step):
     data_mode = 'MGTV'
 
     flip_test = True
-    model_path = '../experiments/pretrained_models/RRDBEDVR_200000_YUV420.pth'  # TODO: change path
+    model_path = '../experiments/pretrained_models/RRDBEDVR_400000_YUV420.pth'  # TODO: change path
 
     N_in = 7  # use N_in images to restore one HR image
     model = EDVR_arch.EDVR_YUV420(128, N_in, 8, 5, 15, predeblur=False, HR_in=True, w_TSA=False)
 
-    test_dataset_folder = '/home/xiyang/Datasets/MGTV/test_damage_B_y4m'  # TODO: change path
+    test_dataset_folder = '/data/test_damage_B_y4m'  # TODO: change path
 
     #### scene information
     scene_index_path = '../keys/scene_index_test_B.pkl'  # TODO: change path
@@ -38,7 +38,7 @@ def main(gpu_id, start_id, step):
     #### evaluation
     padding = 'replicate'  # temporal padding mode
     save_imgs = True
-    save_folder = '/home/xiyang/Datasets/MGTV/test_damage_B_iter_200000_YUV420'  # TODO: change path
+    save_folder = '/data/test_damage_B_iter_400000_YUV420'  # TODO: change path
     util.mkdirs(save_folder)
     util.setup_logger('base', save_folder, 'test', level=logging.INFO, screen=True, tofile=True)
     logger = logging.getLogger('base')

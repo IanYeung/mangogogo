@@ -1,5 +1,5 @@
 #### general settings
-name: MGTV_EDVR
+name: MGTV_EDVR_RDDB_CA_YUV420_cb_D3
 use_tb_logger: true
 model: video_base
 distortion: sr
@@ -18,21 +18,20 @@ datasets:
     dataroot_LQ: /data/LQ_frames
     cache_keys: ../keys/all_keys.pkl
     outlier_seqs: ~
-    train_seqs: ../keys/train_seqs.pkl
+    train_seqs: ../keys/all_seqs.pkl
     valid_seqs: ../keys/valid_seqs.pkl
     scene_index: ../keys/scene_index.pkl
-
     N_frames: 7
     use_shuffle: true
-    n_workers: 3  # per GPU
-    batch_size: 16
+    n_workers: 4  # per GPU
+    batch_size: 8
     crop_h: 512
-    crop_w: 512
+    crop_w: 1024
     use_flip: true
-    use_rot: true
+    use_rot: false
     modcrop: 16
     reduce_factor: 1
-    split: false
+    split: true
 
   val:
     name: MGTV
@@ -44,30 +43,29 @@ datasets:
     dataroot_LQ: /data/LQ_frames
     cache_keys: ../keys/all_keys.pkl
     outlier_seqs: ~
-    train_seqs: ../keys/train_seqs.pkl
+    train_seqs: ../keys/all_seqs.pkl
     valid_seqs: ../keys/valid_seqs.pkl
     scene_index: ../keys/scene_index.pkl
-
     N_frames: 7
     use_shuffle: false
-    n_workers: 3  # per GPU
+    n_workers: 6  # per GPU
     batch_size: 1
     crop_h: 512
     crop_w: 512
     use_flip: false
     use_rot: false
     modcrop: 16
-    reduce_factor: 5
-    split: false
+    reduce_factor: 1
+    split: true
 
 #### network structures
 network_G:
-  which_model_G: EDVR
+  which_model_G: EDVR_YUV420
   nf: 128
   nframes: 7
   groups: 8
   front_RBs: 5
-  back_RBs: 20
+  back_RBs: 15
   predeblur: false
   HR_in: true
   w_TSA: false
@@ -84,16 +82,16 @@ train:
   lr_scheme: CosineAnnealingLR_Restart
   beta1: 0.9
   beta2: 0.99
-  niter: 400000
+  niter: 200000
   warmup_iter: -1  # -1: no warm up
   T_period: [200000, 200000]
   restarts: [200000]
-  restart_weights: [1]
+  restart_weights: [0.5]
   eta_min: !!float 1e-7
 
-  pixel_criterion: l2
+  pixel_criterion: cb
   pixel_weight: 1.0
-  val_freq: !!float 2e3
+  val_freq: !!float 1e4
 
   manual_seed: 0
 
