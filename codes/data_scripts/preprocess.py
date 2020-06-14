@@ -30,17 +30,21 @@ if __name__ == '__main__':
     util.mkdir(os.path.join(root, 'LQ'))
     util.mkdir(os.path.join(root, 'GT'))
 
+    # lq_name = [
+    #     'train_damage_part1',
+    #     'train_damage_part2',
+    #     'train_damage_part3',
+    #     'train_damage_part4',
+    #     'train_damage_part5',
+    #     'train_damage_part6',
+    #     'val_damage_part1',
+    #     'val_damage_part2'
+    # ]
     lq_name = [
-        'train_damage_part1', 
-        'train_damage_part2', 
-        'train_damage_part3',
-        'train_damage_part4', 
-        'train_damage_part5', 
-        'train_damage_part6',
-        'val_damage_part1',
-        'val_damage_part2'
+        'train_damage',
+        'val_damage'
     ]
-    
+
     for lq in lq_name:
         seq_paths = sorted(glob.glob(os.path.join(root, lq, '*.y4m')))
         for seq_path in seq_paths:
@@ -49,17 +53,21 @@ if __name__ == '__main__':
             print(command)
             os.system(command)
 
+    # gt_name = [
+    #     'train_ref_part1',
+    #     'train_ref_part2',
+    #     'train_ref_part3',
+    #     'train_ref_part4',
+    #     'train_ref_part5',
+    #     'train_ref_part6',
+    #     'val_ref_part1',
+    #     'val_ref_part2'
+    # ]
     gt_name = [
-        'train_ref_part1', 
-        'train_ref_part2', 
-        'train_ref_part3',
-        'train_ref_part4', 
-        'train_ref_part5', 
-        'train_ref_part6',
-        'val_ref_part1',
-        'val_ref_part2'
+        'train_ref',
+        'val_ref'
     ]
-    
+
     for gt in gt_name:
         seq_paths = sorted(glob.glob(os.path.join(root, gt, '*.y4m')))
         for seq_path in seq_paths:
