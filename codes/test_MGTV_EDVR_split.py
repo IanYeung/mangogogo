@@ -128,7 +128,7 @@ def main(gpu_id, start_id, step):
             frames_UV = frames[:, :, 1:, 0::2, 0::2]
             if flip_test:
                 output_Y, output_UV = util.flipx4_forward_split(model, frames_Y, frames_UV)
-#                 output_Y, output_UV = util.flipx2_forward_split(model, frames_Y, frames_UV)
+                # output_Y, output_UV = util.flipx2_forward_split(model, frames_Y, frames_UV)
             else:
                 output_Y, output_UV = util.single_forward_split(model, frames_Y, frames_UV)
             output_Y = output_Y[:, :, 4:-4, :]
