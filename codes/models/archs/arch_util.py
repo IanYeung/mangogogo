@@ -184,7 +184,7 @@ class RRDB(nn.Module):
 
 
 class RRDB_D3(nn.Module):
-    '''Residual in Residual Dense Block'''
+    """Residual in Residual Dense Block"""
 
     def __init__(self, nf, gc=32):
         super(RRDB_D3, self).__init__()
@@ -208,7 +208,7 @@ class RRDB_D3(nn.Module):
         out = self.RDB2(out)
         out = self.RDB3(out)
         out = self.lrelu(self.pixel_shuffle(self.uconv1(out)))
-        out = torch.cat((out,out0),1)
+        out = torch.cat((out, out0), 1)
         out = self.lrelu(self.pixel_shuffle(self.uconv2(out)))
         out = self.CA(self.lastconv(out))
         return out * 0.2 + x

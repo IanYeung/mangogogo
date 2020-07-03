@@ -51,7 +51,7 @@ def main(gpu_id, start_id, step):
 
     #### set up the models
     print('Loading model from {}'.format(model_path))
-    # model.load_state_dict(torch.load(model_path), strict=True)
+    model.load_state_dict(torch.load(model_path), strict=True)
     model.eval()
     model = model.to(device)
 
