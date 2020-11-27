@@ -184,21 +184,21 @@ class MultiFrameEnhancer(object):
         """
         with torch.no_grad():
             input = torch.stack([self.input_cache[v] for v in idxs], dim=0)  # TCHW
-            input = input.unsqueeze(0)  # NTCHW
+            input = input.unsqueeze(0).cuda(device=self.device_id)  # NTCHW
+            input[input < (16. / 255.)] = 16. / 255.
+            # frames = torch.zeros(1, self.nframes, 3, 1088, 1920).cuda(device=self.device_id)
+            # frames[:, :, 0, :, :] =  16. / 255.
+            # frames[:, :, 1, :, :] = 128. / 255.
+            # frames[:, :, 2, :, :] = 128. / 255.
+            # frames[:, :, :, 4:-4, :] = input
 
-            frames = torch.zeros(1, self.nframes, 3, 1088, 1920).cuda(device=self.device_id)
-            frames[:, :, 0, :, :] =  16. / 255.
-            frames[:, :, 1, :, :] = 128. / 255.
-            frames[:, :, 2, :, :] = 128. / 255.
-            frames[:, :, :, 4:-4, :] = input
-
-            out = self.net(frames)
+            out = self.net(input)
             out = out * 255.
             out = out.to(torch.uint8).squeeze()
             out = out.permute(1, 2, 0)
             out = out.cpu().numpy()
 
-            out = out[4:-4, :, :]
+            # out = out[4:-4, :, :]
 
         return out
 

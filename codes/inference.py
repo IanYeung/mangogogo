@@ -22,16 +22,16 @@ from data_scripts.scene_detect import MySceneManager
 
 
 parser = argparse.ArgumentParser(description='Video Restoration')
-parser.add_argument('--input_video', default='/home/xiyang/Downloads/test/yuan_ya_wei_3minutes.y4m')
-parser.add_argument('--save_path', default='/home/xiyang/Downloads/output')
+parser.add_argument('--input_video', default='/home/xiyang/Downloads/test/lq/yuntingke.mp4')
+parser.add_argument('--save_path', default='/home/xiyang/Downloads/test/hq')
 parser.add_argument('--model_arch', default='EDVR')
 parser.add_argument('--weight_path', default='../experiments/pretrained_models/EDVR_TSA_200000.pth')
-parser.add_argument('--bitrate', type=str, default='15M')
+parser.add_argument('--bitrate', type=str, default='10M')
 parser.add_argument('--nframes', type=int, default=7)
 parser.add_argument('--frame_buf_len', type=int, default=200)
 parser.add_argument('--batch_size', type=int, default=1)
 parser.add_argument('--device_id', type=int, default=0)
-parser.add_argument('--log_path', type=str, default='../log/VideoEnhance.log')
+parser.add_argument('--log_path', type=str, default='../log/inference.log')
 opt = parser.parse_args()
 
 log = logger.Logger(filename=opt.log_path, level='debug')
@@ -92,17 +92,19 @@ def video2video(opt):
     k = 0
     t_sr = 0
     t1 = time.time()
-    while(True):
+    while True:
         k += 1
         ret, frame = cap.read()
         # video end
         if not ret or type(frame) is not np.ndarray:
             print('Finish reading video')
-            if len(imgs)==0: break
+            if len(imgs) == 0:
+                break
             isend = True
         else:
             imgs.append(frame)
-            if len(imgs)<opt.batch_size: continue
+            if len(imgs) < opt.batch_size:
+                continue
 
         t_start = time.time()
         outs = enhancer.forward_batch(imgs)
@@ -113,7 +115,8 @@ def video2video(opt):
             writer.stdin.write(out.astype(np.uint8).tobytes())
 
         imgs = []
-        if isend: break
+        if isend:
+            break
 
     writer.stdin.close()
     writer.wait()
