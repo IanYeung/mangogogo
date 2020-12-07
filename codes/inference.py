@@ -18,7 +18,7 @@ from scenedetect.video_manager import VideoManager
 from scenedetect.frame_timecode import FrameTimecode
 from scenedetect.stats_manager import StatsManager
 from scenedetect.detectors import ContentDetector
-from data_scripts.scene_detect import MySceneManager
+from scripts.scene_detect import MySceneManager
 
 
 parser = argparse.ArgumentParser(description='Video Restoration')
